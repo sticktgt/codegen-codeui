@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "codeui"
+version = "0.1.0"
+description = "Web UI and FastAPI facade for codecollector"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi==0.135.1",
+    "uvicorn[standard]==0.41.0",
+    "pydantic==2.12.5",
+    "PyYAML==6.0.3",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==9.0.2",
+    "httpx==0.28.1",
+]
+
+[project.scripts]
+codeui = "codeui.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["codeui*"]
+
+[tool.setuptools.package-data]
+codeui = ["static/*"]

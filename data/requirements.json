@@ -1,0 +1,4678 @@
+{
+  "requirements": [
+    {
+      "project_id": "1",
+      "type": "BR",
+      "status": "новое",
+      "priority": "1 этап",
+      "id": "LLM-A-000001",
+      "description": "Нам необходимо внедрить новый интерфейс для сотрудников фронт-офиса (операторов), который ускорит процесс оформления заявок на потребительские кредиты и минимизирует количество ошибок при вводе данных.",
+      "note": "",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "trace_start_char": "0",
+      "trace_end_char": "0",
+      "parent_id": "",
+      "verification_status": "верифицировано",
+      "created_at": "30.11.2023",
+      "acceptance_criteria_str": "",
+      "user_roles": [],
+      "tags": [],
+      "acceptance_criteria": []
+    },
+    {
+      "project_id": "1",
+      "type": "UR",
+      "status": "новое",
+      "priority": "MVP",
+      "id": "LLM-A-000002",
+      "description": "Текущий процесс (заполнение бумажных анкет или работа в устаревшей системе) занимает слишком много времени и приводит к высокому проценту отказов из-за опечаток в паспортных данных.",
+      "note": "",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "trace_start_char": "210",
+      "trace_end_char": "365",
+      "parent_id": "",
+      "verification_status": "верифицировано",
+      "created_at": "30.11.2023",
+      "acceptance_criteria_str": "",
+      "user_roles": [],
+      "tags": [],
+      "acceptance_criteria": []
+    },
+    {
+      "type": "BR",
+      "status": "новое",
+      "description": "Система предназначена исключительно для Оператора ввода заявок.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "31.12.2023",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "id": "LLM-A-000003",
+      "trace_span": {
+        "start_char": 25,
+        "end_char": 46
+      },
+      "verification_status": "не верифицировано",
+      "note": "Требование не прошло критерий 'Полнота', так как не уточняются условия использования системы и возможные роли пользователей помимо Оператора ввода заявок."
+    },
+    {
+      "type": "UR",
+      "status": "новое",
+      "description": "Оператор не принимает окончательное решение о выдаче кредита.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "31.12.2023",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "id": "LLM-A-000004",
+      "trace_span": {
+        "start_char": 47,
+        "end_char": 65
+      },
+      "verification_status": "не верифицировано",
+      "note": "Требование не прошло критерий 'Полнота', так как отсутствуют условия, исключения или зависимости, связанные с процессом принятия решения о выдаче кредита."
+    },
+    {
+      "type": "UR",
+      "status": "новое",
+      "description": "Оператор не видит скоринговые модели.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "31.12.2023",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "id": "LLM-A-000005",
+      "trace_span": {
+        "start_char": 66,
+        "end_char": 79
+      },
+      "verification_status": "не верифицировано",
+      "note": "Требование не прошло критерий 'Полнота', так как нет указания на условия, исключения или зависимости, связанные с видимостью скоринговых моделей для операторов."
+    },
+    {
+      "type": "UR",
+      "status": "новое",
+      "description": "Оператор не имеет доступа к настройкам системы.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "31.12.2023",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "id": "LLM-A-000006",
+      "trace_span": {
+        "start_char": 80,
+        "end_char": 96
+      },
+      "verification_status": "не верифицировано",
+      "note": "Требование не прошло критерий 'Полнота', так как нет указания на условия, исключения или зависимости."
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Его задача — корректно ввести данные клиента, пройти обязательные проверки и отправить заявку в систему.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "31.12.2023",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "id": "LLM-A-000007",
+      "trace_span": {
+        "start_char": 97,
+        "end_char": 145
+      },
+      "verification_status": "не верифицировано",
+      "note": "Требование не соответствует критерию 'Полнота', так как не указаны конкретные обязательные проверки и условия для ввода данных клиента."
+    },
+    {
+      "type": "BR",
+      "status": "новое",
+      "description": "Оператор должен входить в систему под своим уникальным логином и паролем.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "28.09.2023",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "id": "LLM-A-000008",
+      "trace_span": {
+        "start_char": 35,
+        "end_char": 62
+      },
+      "verification_status": "верифицировано",
+      "note": ""
+    },
+    {
+      "type": "BR",
+      "status": "новое",
+      "description": "При старте смены оператор видит список своих текущих заявок со статусами (Черновик, На проверке, Одобрено, Отклонено).",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "28.09.2023",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "id": "LLM-A-000009",
+      "trace_span": {
+        "start_char": 63,
+        "end_char": 128
+      },
+      "verification_status": "верифицировано",
+      "note": ""
+    },
+    {
+      "type": "BR",
+      "status": "новое",
+      "description": "Должна быть кнопка «Новая заявка» для начала работы с новым клиентом.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "28.09.2023",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "id": "LLM-A-000010",
+      "trace_span": {
+        "start_char": 129,
+        "end_char": 156
+      },
+      "verification_status": "не верифицировано",
+      "note": "Требование не прошло критерий 'Полнота', так как нет указания на условия активации кнопки (например, наличие свободного места для нового клиента в системе)."
+    },
+    {
+      "type": "BR",
+      "status": "новое",
+      "description": "Система должна автоматически и мгновенно проверять введенный паспорт на действительность (не числится ли в базе утраченных/недействительных) сразу после ввода номера. Если паспорт недействителен — дальнейшая работа блокируется с понятным сообщением об ошибке.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "28.09.2023",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "id": "LLM-A-000011",
+      "trace_span": {
+        "start_char": 105,
+        "end_char": 327
+      },
+      "verification_status": "верифицировано",
+      "note": ""
+    },
+    {
+      "type": "BR",
+      "status": "новое",
+      "description": "Должна быть кнопка «Предварительный расчет», чтобы показать клиенту примерный погашение кредита.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "28.09.2023",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "id": "LLM-A-000012",
+      "trace_span": {
+        "start_char": 123,
+        "end_char": 156
+      },
+      "verification_status": "не верифицировано",
+      "note": "Требование не прошло критерий 'Полнота', так как отсутствуют условия, исключения или зависимости, связанные с функциональностью кнопки «Предварительный расчет»."
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Создать интерфейс, который будет ускорять процесс оформления заявок на потребительские кредиты.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000001",
+      "created_at": "2023-10-05T14:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000013",
+      "verification_status": "не верифицировано",
+      "note": "Требование не прошло критерий 'Полнота', так как не указаны конкретные условия, исключения или зависимости, которые должны быть учтены при создании интерфейса."
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Уменьшить количество ошибок при вводе данных путем внедрения нового интерфейса.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000001",
+      "created_at": "2023-10-05T14:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000014",
+      "verification_status": "не верифицировано",
+      "note": "Требование не прошло критерий 'Полнота', так как не указаны условия, исключения или зависимости, связанные с внедрением нового интерфейса."
+    },
+    {
+      "type": "BR",
+      "status": "новое",
+      "description": "Интерфейс должен быть интуитивно понятным и легко использовать для операторов фронт-офиса.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000001",
+      "created_at": "2023-10-05T14:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000015",
+      "verification_status": "не верифицировано",
+      "note": "Требование не прошло критерий 'Проверяемость/Тестируемость', так как нет указания на конкретные методы или метрики для объективной проверки интуитивности интерфейса и его легкости использования."
+    },
+    {
+      "type": "BR",
+      "status": "новое",
+      "description": "Интерфейс должен поддерживать быстрый ввод данных, уменьшая время на оформление заявок.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000001",
+      "created_at": "2023-10-05T14:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000016",
+      "verification_status": "не верифицировано",
+      "note": "Требование не прошло критерий Verifiable (Проверяемость), так как не указаны конкретные методы или метрики для объективной проверки выполнения требования."
+    },
+    {
+      "type": "BR",
+      "status": "новое",
+      "description": "Интерфейс должен минимизировать количество ошибок при вводе данных путем автоматической проверки и подсказок.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000001",
+      "created_at": "2023-10-05T14:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000017",
+      "verification_status": "верифицировано",
+      "note": ""
+    },
+    {
+      "type": "NFR",
+      "status": "новое",
+      "description": "Интерфейс должен быть адаптирован к различным устройствам и операционным системам, обеспечивая универсальность.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000001",
+      "created_at": "2023-10-05T14:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000018",
+      "verification_status": "верифицировано",
+      "note": ""
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Сократить время заполнения анкет за счет автоматизации процесса ввода данных.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000002",
+      "created_at": "2023-10-05T14:48:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000019",
+      "verification_status": "не верифицировано",
+      "note": "Требование не прошло критерий 'Полнота', так как нет указания на конкретные условия или исключения, которые могут повлиять на процесс автоматизации."
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Уменьшить количество ошибок в паспортных данных путем внедрения проверки на этапе ввода.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000002",
+      "created_at": "2023-10-05T14:48:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000020",
+      "verification_status": "верифицировано",
+      "note": ""
+    },
+    {
+      "type": "UR",
+      "status": "новое",
+      "description": "Уменьшить процент отказов в процессе заполнения анкет.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000002",
+      "created_at": "2023-10-05T14:48:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000021",
+      "verification_status": "не верифицировано",
+      "note": "Требование не прошло критерий 'Полнота', так как не указаны конкретные условия или исключения, влияющие на процент отказов в процессе заполнения анкет."
+    },
+    {
+      "type": "NFR",
+      "status": "новое",
+      "description": "Система должна быть интуитивно понятной и удобной для использования.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000002",
+      "created_at": "2023-10-05T14:48:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000022",
+      "verification_status": "не верифицировано",
+      "note": "Требование не прошло критерий Verifiable (Проверяемость), так как нет указания на конкретные методы или метрики для объективной проверки интуитивности и удобства использования системы."
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Оператор ввода заявок должен иметь возможность авторизации на систему.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000003",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000023",
+      "verification_status": "не верифицировано",
+      "note": "Требование не прошло критерий 'Полнота', так как отсутствуют условия, исключения или зависимости, связанные с авторизацией оператора ввода заявок."
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Оператор ввода заявок должен иметь доступ только к функциональным возможностям, связанным с вводом и редактированием заявок.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000003",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000024",
+      "verification_status": "верифицировано",
+      "note": ""
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Оператор ввода заявок должен иметь возможность сохранения и отправки заявок.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000003",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000025",
+      "verification_status": "не верифицировано",
+      "note": "Требование не прошло критерий 'Полнота', так как отсутствуют условия или исключения, которые могут повлиять на процесс сохранения и отправки заявок."
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Оператор ввода заявок должен иметь возможность просмотра и редактирования собственных ранее введенных заявок.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000003",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000026",
+      "verification_status": "верифицировано",
+      "note": ""
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Оператор ввода заявок должен иметь возможность просмотра статусов своих заявок.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000003",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000027",
+      "verification_status": "не верифицировано",
+      "note": "Требование не прошло критерий 'Полнота', так как отсутствуют условия или исключения, которые могут повлиять на выполнение требования."
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Оператор ввода заявок должен иметь возможность получения уведомлений о статусе своих заявок.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000003",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000028",
+      "verification_status": "не верифицировано",
+      "note": "Требование не прошло критерий 'Полнота', так как отсутствуют условия, исключения или зависимости, связанные с получением уведомлений."
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Оператор должен иметь возможность просмотреть все доступные данные о потенциальном заемщике перед принятием решения.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000004",
+      "created_at": "2023-10-05T12:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000029",
+      "verification_status": "не верифицировано",
+      "note": "Требование не прошло критерий 'Полнота', так как не указаны условия, исключения или зависимости, которые могут повлиять на выполнение требования."
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Оператор должен иметь возможность оценить риски, связанные с выдачей кредита.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000004",
+      "created_at": "2023-10-05T12:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000030",
+      "verification_status": "не верифицировано",
+      "note": "Требование не прошло критерий 'Полнота', так как не указаны конкретные условия, исключения или зависимости, связанные с оценкой рисков."
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Оператор должен иметь возможность запросить дополнительную информацию о потенциальном заемщике, если это необходимо для принятия решения.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000004",
+      "created_at": "2023-10-05T12:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000031",
+      "verification_status": "верифицировано",
+      "note": ""
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Оператор должен иметь возможность оставить комментарии к каждому потенциальному случаю выдачи кредита.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000004",
+      "created_at": "2023-10-05T12:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000032",
+      "verification_status": "не верифицировано",
+      "note": "Требование не прошло критерий 'Полнота', так как отсутствуют условия, исключения или зависимости, связанные с оставлением комментариев."
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Оператор должен иметь возможность сохранить историю принятых решений о выдаче кредита.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000004",
+      "created_at": "2023-10-05T12:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000033",
+      "verification_status": "не верифицировано",
+      "note": "Требование не прошло критерий 'Полнота', так как отсутствуют условия, исключения или зависимости, связанные с хранением и управлением историей принятых решений."
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Оператор должен иметь возможность отклонить заявку на кредит без возможности дальнейшего рассмотрения.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000004",
+      "created_at": "2023-10-05T12:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000034",
+      "verification_status": "не верифицировано",
+      "note": "Требование не прошло критерий 'Полнота', так как отсутствуют условия или исключения, которые определяют, что будет происходить с заявкой после ее отклонения."
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Оператор не должен иметь доступа к скоринговым моделям.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000005",
+      "created_at": "2023-10-04T12:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000035",
+      "verification_status": "верифицировано",
+      "note": ""
+    },
+    {
+      "type": "NFR",
+      "status": "новое",
+      "description": "Оператор должен иметь возможность видеть только общую информацию о скоринге, без детального доступа к моделям.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000005",
+      "created_at": "2023-10-04T12:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000036",
+      "verification_status": "верифицировано",
+      "note": ""
+    },
+    {
+      "type": "UR",
+      "status": "новое",
+      "description": "Оператор не должен иметь права на изменение или редактирование скоринговых моделей.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000005",
+      "created_at": "2023-10-04T12:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000037",
+      "verification_status": "верифицировано",
+      "note": ""
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Оператор не должен иметь возможность изменять настройки системы.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000006",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000038",
+      "verification_status": "не верифицировано",
+      "note": "Требование не прошло критерий 'Проверяемость/Тестируемость', так как нет указания на методы или инструменты, которые будут использоваться для проверки выполнения этого требования."
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Оператор не должен иметь возможность просматривать конфигурационные файлы системы.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000006",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000039",
+      "verification_status": "верифицировано",
+      "note": ""
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Оператор не должен иметь возможность редактировать системные настройки через интерфейс пользователя.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000006",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000040",
+      "verification_status": "верифицировано",
+      "note": ""
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Оператор не должен иметь возможность запускать команды, изменяющие системные настройки.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000006",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000041",
+      "verification_status": "верифицировано",
+      "note": ""
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Оператор не должен иметь возможность просматривать журналы изменений настроек системы.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000006",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000042",
+      "verification_status": "верифицировано",
+      "note": ""
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Пользователь должен корректно ввести все необходимые данные клиента, такие как имя, фамилия, контактный телефон и адрес электронной почты.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000007",
+      "created_at": "2023-10-05T14:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000043",
+      "verification_status": "верифицировано",
+      "note": ""
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Пользователь должен пройти обязательные проверки введенных данных клиента, такие как проверка на наличие символов, цифр и специальных знаков.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000007",
+      "created_at": "2023-10-05T14:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000044",
+      "verification_status": "не верифицировано",
+      "note": "Требование не прошло критерий 'Полнота', так как отсутствуют указания на конкретные условия проверки и специальные знаки, которые должны быть проверены."
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Пользователь должен отправить заявку в систему после успешного прохождения всех проверок.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000007",
+      "created_at": "2023-10-05T14:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000045",
+      "verification_status": "верифицировано",
+      "note": ""
+    },
+    {
+      "type": "NFR",
+      "status": "новое",
+      "description": "Система должна обеспечивать сохранность введенных данных клиента и не разглашать их без согласия пользователя.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000007",
+      "created_at": "2023-10-05T14:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000046",
+      "verification_status": "верифицировано",
+      "note": ""
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Оператор должен иметь уникальное имя пользователя для входа в систему.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000008",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000047",
+      "verification_status": "не верифицировано",
+      "note": "Требование не прошло критерий 'Полнота', так как отсутствуют условия, исключения или зависимости, связанные с уникальностью имени пользователя."
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Оператор должен иметь уникальный пароль для входа в систему.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000008",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000048",
+      "verification_status": "не верифицировано",
+      "note": "Требование не прошло критерий 'Полнота', так как отсутствуют условия, исключения или зависимости, которые могут повлиять на выполнение требования."
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "При попытке входа в систему с неуникальным логином или паролем, оператор должен получить соответствующее сообщение об ошибке.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000008",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000049",
+      "verification_status": "верифицировано",
+      "note": ""
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Система должна проверять уникальность логина и пароля при регистрации нового оператора.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000008",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000050",
+      "verification_status": "верифицировано",
+      "note": ""
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Система должна обеспечивать безопасное хранение логинов и паролей операторов.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000008",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000051",
+      "verification_status": "не верифицировано",
+      "note": "Требование не прошло критерий Verifiable (Проверяемость/Тестируемость), так как нет указания на методы или инструменты, которые будут использоваться для проверки того, что логины и пароли операторов хранятся безопасно."
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Оператор видит заголовок своей текущей заявки.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000009",
+      "created_at": "2023-10-05T14:48:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000052",
+      "verification_status": "не верифицировано",
+      "note": "Требование не прошло критерий 'Полнота', так как отсутствуют условия или исключения, которые могут повлиять на видимость заголовка заявки для оператора."
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Оператор видит статус своей текущей заявки.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000009",
+      "created_at": "2023-10-05T14:48:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000053",
+      "verification_status": "не верифицировано",
+      "note": "Требование не прошло критерий 'Полнота', так как отсутствуют условия или исключения, которые могут повлиять на статус заявки."
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Оператор видит дату и время создания своей текущей заявки.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000009",
+      "created_at": "2023-10-05T14:48:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000054",
+      "verification_status": "не верифицировано",
+      "note": "Требование не прошло критерий 'Полнота', так как отсутствуют условия или исключения, которые могут повлиять на видимость даты и времени создания заявки."
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Оператор видит дату и время последнего изменения своей текущей заявки.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000009",
+      "created_at": "2023-10-05T14:48:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000055",
+      "verification_status": "верифицировано",
+      "note": ""
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Оператор видит список всех своих текущих заявок.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000009",
+      "created_at": "2023-10-05T14:48:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000056",
+      "verification_status": "верифицировано",
+      "note": ""
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Оператор видит статус каждой своей текущей заявки.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000009",
+      "created_at": "2023-10-05T14:48:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000057",
+      "verification_status": "верифицировано",
+      "note": ""
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Оператор видит количество своих текущих заявок в каждом из статусов (Черновик, На проверке, Одобрено, Отклонено).",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000009",
+      "created_at": "2023-10-05T14:48:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000058",
+      "verification_status": "верифицировано",
+      "note": ""
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Система должна автоматически проверять действительность введенного номера паспорта, сравнивая его с базой данных утраченных или недействительных паспортов.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000011",
+      "created_at": "2023-10-05T14:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000059",
+      "verification_status": "верифицировано",
+      "note": ""
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Проверка должна быть мгновенной, чтобы не задерживать процесс оформления заявок.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000011",
+      "created_at": "2023-10-05T14:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000060",
+      "verification_status": "не верифицировано",
+      "note": "Требование не соответствует критерию Полнота (Complete), так как не указаны условия, исключения или зависимости, которые могут влиять на процесс мгновенной проверки."
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Если паспорт недействителен, система должна блокировать дальнейшую работу и отображать понятное сообщение об ошибке.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000011",
+      "created_at": "2023-10-05T14:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000061",
+      "verification_status": "верифицировано",
+      "note": ""
+    },
+    {
+      "type": "UR",
+      "status": "новое",
+      "description": "Система должна ускорить процесс оформления заявок на потребительские кредиты.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000011",
+      "created_at": "2023-10-05T14:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000062",
+      "verification_status": "не верифицировано",
+      "note": "Требование не прошло критерий 'Полнота', так как не указаны конкретные условия, исключения или зависимости, влияющие на процесс оформления заявок на потребительские кредиты."
+    },
+    {
+      "type": "UR",
+      "status": "новое",
+      "description": "Система должна минимизировать количество ошибок при вводе данных.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000011",
+      "created_at": "2023-10-05T14:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000063",
+      "verification_status": "не верифицировано",
+      "note": "Требование не прошло критерий Verifiable (Проверяемость), так как не указаны конкретные методы или метрики для объективной проверки выполнения условия минимизации ошибок при вводе данных."
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Текущий процесс (заполнение бумажных анкет или работа в устаревшей системе) занимает слишком много времени.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000011",
+      "created_at": "2023-10-05T14:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000064",
+      "verification_status": "не верифицировано",
+      "note": "Требование не прошло критерий 'Полнота', так как отсутствуют конкретные условия, исключения или зависимости, влияющие на процесс заполнения анкет или работы в устаревшей системе."
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Добавить кнопку «Предварительный расчет» на странице формы заявки на потребительский кредит.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000012",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000065",
+      "verification_status": "верифицировано",
+      "note": ""
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "При нажатии на кнопку «Предварительный расчет» отобразить клиенту примерные условия погашения кредита.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000012",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000066",
+      "verification_status": "верифицировано",
+      "note": ""
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Предварительный расчет должен учитывать основные параметры кредита: сумму кредита, процентную ставку и срок погашения.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000012",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000067",
+      "verification_status": "верифицировано",
+      "note": ""
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Предварительный расчет должен отображать примерные ежемесячные платежи, общую сумму погашения и проценты.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000012",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000068",
+      "verification_status": "верифицировано",
+      "note": ""
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Предварительный расчет должен обновляться в реальном времени при изменении пользователем значений суммы кредита, процентной ставки или срока погашения.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "LLM-A-000012",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "1",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "LLM-A-000069",
+      "verification_status": "верифицировано",
+      "note": ""
+    },
+    {
+      "type": "BR",
+      "status": "новое",
+      "description": "Система должна автоматизировать процесс выдачи розничных кредитов физическим лицам.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-04T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "2",
+      "id": "FO-NP-LN-000001",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 85
+      }
+    },
+    {
+      "type": "UR",
+      "status": "новое",
+      "description": "Система должна сократить время обработки заявки от момента обращения клиента до принятия решения.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-04T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "2",
+      "id": "FO-NP-LN-000002",
+      "trace_span": {
+        "start_char": 86,
+        "end_char": 159
+      }
+    },
+    {
+      "type": "UR",
+      "status": "новое",
+      "description": "Система должна минимизировать ошибки ручного ввода.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-04T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "2",
+      "id": "FO-NP-LN-000003",
+      "trace_span": {
+        "start_char": 160,
+        "end_char": 205
+      }
+    },
+    {
+      "type": "UR",
+      "status": "новое",
+      "description": "Система должна стандартизировать продуктовые условия.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-04T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "2",
+      "id": "FO-NP-LN-000004",
+      "trace_span": {
+        "start_char": 206,
+        "end_char": 257
+      }
+    },
+    {
+      "type": "UR",
+      "status": "новое",
+      "description": "Система должна обеспечить сквозную прозрачность на всех этапах кредитного цикла.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-04T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "2",
+      "id": "FO-NP-LN-000005",
+      "trace_span": {
+        "start_char": 258,
+        "end_char": 367
+      }
+    },
+    {
+      "type": "BR",
+      "status": "новое",
+      "description": "Система предназначена для сотрудников отделений, кредитных специалистов, менеджеров по продажам и руководителей направлений.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-05T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "2",
+      "id": "FO-NP-LN-000006",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 86
+      }
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Необходимо поддержать полный цикл работы: регистрацию обращения, предварительный скоринг, формирование индивидуального предложения, проверку документов, согласование, подписание договора, выдачу средств и первичное сопровождение.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-05T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "2",
+      "id": "FO-NP-LN-000007",
+      "trace_span": {
+        "start_char": 87,
+        "end_char": 469
+      }
+    },
+    {
+      "type": "UR",
+      "status": "новое",
+      "description": "Важно реализовать гибкую матрицу ролей с детализированными правами доступа и возможностью делегирования задач внутри команд.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-05T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "2",
+      "id": "FO-NP-LN-000008",
+      "trace_span": {
+        "start_char": 470,
+        "end_char": 689
+      }
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Единая форма сбора данных клиента.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-05T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "2",
+      "id": "FO-NP-LN-000009",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 46
+      }
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Автоматическая валидация документов.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-05T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "2",
+      "id": "FO-NP-LN-000010",
+      "trace_span": {
+        "start_char": 47,
+        "end_char": 96
+      }
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Расчет параметров кредита (ставка, срок, график платежей, первоначальный взнос, страховые опции).",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-05T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "2",
+      "id": "FO-NP-LN-000011",
+      "trace_span": {
+        "start_char": 97,
+        "end_char": 268
+      }
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Генерация полного пакета кредитных документов.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-05T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "2",
+      "id": "FO-NP-LN-000012",
+      "trace_span": {
+        "start_char": 269,
+        "end_char": 348
+      }
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Встроенный модуль электронного подписания и архивирования.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-05T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "2",
+      "id": "FO-NP-LN-000013",
+      "trace_span": {
+        "start_char": 349,
+        "end_char": 468
+      }
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Административный интерфейс для самостоятельной настройки продуктовой линейки, тарифов, лимитов и бизнес-правил без привлечения разработчиков.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-05T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "2",
+      "id": "FO-NP-LN-000014",
+      "trace_span": {
+        "start_char": 469,
+        "end_char": 785
+      }
+    },
+    {
+      "type": "BR",
+      "status": "новое",
+      "description": "Архитектура системы должна предусматривать готовые коннекторы к нашей автоматизированной банковской системе (АБС), внешним бюро кредитных историй, скоринговому движку, платежным шлюзам, CRM и системам верификации.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-04T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "2",
+      "id": "FO-NP-LN-000015",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 268
+      }
+    },
+    {
+      "type": "BR",
+      "status": "новое",
+      "description": "Обмен данными должен осуществляться через защищенные API в режиме реального времени.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-04T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "2",
+      "id": "FO-NP-LN-000016",
+      "trace_span": {
+        "start_char": 269,
+        "end_char": 357
+      }
+    },
+    {
+      "type": "BR",
+      "status": "новое",
+      "description": "Дополнительно требуется предусмотреть устойчивую работу в условиях нестабильного интернет-соединения с локальным кэшированием заявок и автоматической синхронизацией при восстановлении связи.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-04T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "2",
+      "id": "FO-NP-LN-000017",
+      "trace_span": {
+        "start_char": 358,
+        "end_char": 679
+      }
+    },
+    {
+      "type": "CONSTRAINT",
+      "status": "новое",
+      "description": "Соблюдение 152-ФЗ, стандартов ЦБ РФ и отраслевых требований по защите персональных и финансовых данных.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-05T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "2",
+      "id": "FO-NP-LN-000018",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 98
+      }
+    },
+    {
+      "type": "CONSTRAINT",
+      "status": "новое",
+      "description": "Ведение неизменяемого журнала аудита всех действий пользователей.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-05T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "2",
+      "id": "FO-NP-LN-000019",
+      "trace_span": {
+        "start_char": 99,
+        "end_char": 164
+      }
+    },
+    {
+      "type": "CONSTRAINT",
+      "status": "новое",
+      "description": "Шифрование данных на уровне полей.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-05T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "2",
+      "id": "FO-NP-LN-000020",
+      "trace_span": {
+        "start_char": 165,
+        "end_char": 187
+      }
+    },
+    {
+      "type": "CONSTRAINT",
+      "status": "новое",
+      "description": "Многофакторная аутентификация.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-05T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "2",
+      "id": "FO-NP-LN-000021",
+      "trace_span": {
+        "start_char": 188,
+        "end_char": 206
+      }
+    },
+    {
+      "type": "CONSTRAINT",
+      "status": "новое",
+      "description": "Отказоустойчивость не ниже 99,9%.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-05T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "2",
+      "id": "FO-NP-LN-000022",
+      "trace_span": {
+        "start_char": 207,
+        "end_char": 246
+      }
+    },
+    {
+      "type": "BR",
+      "status": "новое",
+      "description": "Интерфейс должен быть интуитивным.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-05T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "2",
+      "id": "FO-NP-LN-000023",
+      "trace_span": {
+        "start_char": 247,
+        "end_char": 268
+      }
+    },
+    {
+      "type": "BR",
+      "status": "новое",
+      "description": "Адаптивный для ПК и планшетов.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-05T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "2",
+      "id": "FO-NP-LN-000024",
+      "trace_span": {
+        "start_char": 269,
+        "end_char": 287
+      }
+    },
+    {
+      "type": "BR",
+      "status": "новое",
+      "description": "Поддержка стандартов доступности.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-05T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "2",
+      "id": "FO-NP-LN-000025",
+      "trace_span": {
+        "start_char": 288,
+        "end_char": 306
+      }
+    },
+    {
+      "type": "BR",
+      "status": "новое",
+      "description": "Возможность кастомизации под фирменный стиль.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-05T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "2",
+      "id": "FO-NP-LN-000026",
+      "trace_span": {
+        "start_char": 307,
+        "end_char": 364
+      }
+    },
+    {
+      "type": "BR",
+      "status": "новое",
+      "description": "Игра должна быть простой для использования, без необходимости настроек.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-04T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "id": "TTT-000001",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 65
+      }
+    },
+    {
+      "type": "BR",
+      "status": "новое",
+      "description": "Игра должна быть доступна для быстрого запуска, без регистрации или обучения.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-04T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "id": "TTT-000002",
+      "trace_span": {
+        "start_char": 66,
+        "end_char": 158
+      }
+    },
+    {
+      "type": "BR",
+      "status": "новое",
+      "description": "Игра должна загружаться быстро и сразу показывать готовое игровое поле.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-04T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "id": "TTT-000003",
+      "trace_span": {
+        "start_char": 159,
+        "end_char": 268
+      }
+    },
+    {
+      "type": "BR",
+      "status": "новое",
+      "description": "Игровое поле должно быть размером 3×3.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-04T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "id": "TTT-000004",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 56
+      }
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Игроки могут по очереди ставить крестики и нолики на игровом поле.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-04T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "id": "TTT-000005",
+      "trace_span": {
+        "start_char": 57,
+        "end_char": 98
+      }
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Соперником может быть другой человек на том же устройстве или компьютер.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-04T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "id": "TTT-000006",
+      "trace_span": {
+        "start_char": 99,
+        "end_char": 156
+      }
+    },
+    {
+      "type": "UR",
+      "status": "новое",
+      "description": "По умолчанию первым ходит крестик, но игрок должен иметь возможность выбрать, кто начинает.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-04T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "id": "TTT-000007",
+      "trace_span": {
+        "start_char": 157,
+        "end_char": 268
+      }
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "После каждого хода игра должна четко показывать, чья сейчас очередь.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-04T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "id": "TTT-000008",
+      "trace_span": {
+        "start_char": 269,
+        "end_char": 358
+      }
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Система должна мгновенно объявлять победителя и визуально выделять выигрышную линию, как только три одинаковых символа выстроятся в ряд по горизонтали, вертикали или диагонали.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-05T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "id": "TTT-000009",
+      "trace_span": {
+        "start_char": 46,
+        "end_char": 98
+      }
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Игра должна сообщать о ничьей, если все 9 клеток заполнены, а победителя нет.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-05T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "id": "TTT-000010",
+      "trace_span": {
+        "start_char": 99,
+        "end_char": 146
+      }
+    },
+    {
+      "type": "UR",
+      "status": "новое",
+      "description": "Победа или ничья не должны требовать ручного подтверждения или дополнительного клика.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-05T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "id": "TTT-000011",
+      "trace_span": {
+        "start_char": 147,
+        "end_char": 186
+      }
+    },
+    {
+      "type": "BR",
+      "status": "новое",
+      "description": "Управление должно быть интуитивным: один клик или тап по свободной клетке ставит мой символ.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-04T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "id": "TTT-000012",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 85
+      }
+    },
+    {
+      "type": "BR",
+      "status": "новое",
+      "description": "Если я пытаюсь ходить в занятую клетку или не в свою очередь, действие должно игнорироваться или сопровождаться мягким визуальным сигналом.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-04T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "id": "TTT-000013",
+      "trace_span": {
+        "start_char": 86,
+        "end_char": 195
+      }
+    },
+    {
+      "type": "BR",
+      "status": "новое",
+      "description": "Интерфейс минималистичный: контрастные символы, читаемый статус («Ход крестиков», «Победили нолики!», «Ничья»), отсутствие отвлекающих элементов, баннеров или обязательных всплывающих окон.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-04T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "id": "TTT-000014",
+      "trace_span": {
+        "start_char": 196,
+        "end_char": 457
+      }
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "После завершения партии должна быть кнопка «Начать заново», которая очищает поле, возвращает ход стартовому игроку и сохраняет счёт текущей сессии.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-04T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "id": "TTT-000015",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 98
+      }
+    },
+    {
+      "type": "BR",
+      "status": "новое",
+      "description": "Статистика (победы / проигрыши / ничьи) должна отображаться рядом с игровым полем, чтобы игрок мог видеть свой прогресс за текущую игровую сессию без необходимости переключаться между экранами.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-04T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "id": "TTT-000016",
+      "trace_span": {
+        "start_char": 99,
+        "end_char": 256
+      }
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Если предусмотрен режим «человек против компьютера», игрок должен иметь возможность выбирать уровень сложности: лёгкий (оппонент ходит хаотично), средний (базовая защита и случайные атаки) и сложный (оптимальная стратегия, гарантирующая ему ничью или проигрыш).",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-05T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "id": "TTT-000017",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 469
+      }
+    },
+    {
+      "type": "UR",
+      "status": "новое",
+      "description": "Переключение режима «человек против компьютера» должно происходить до начала партии или через меню, не прерывая текущую игру.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-05T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "id": "TTT-000018",
+      "trace_span": {
+        "start_char": 470,
+        "end_char": 689
+      }
+    },
+    {
+      "type": "BR",
+      "status": "новое",
+      "description": "Игра должна корректно масштабироваться под размер экрана.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-04T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "id": "TTT-000019",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 56
+      }
+    },
+    {
+      "type": "BR",
+      "status": "новое",
+      "description": "Игра должна поддерживать тач-управление.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-04T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "id": "TTT-000020",
+      "trace_span": {
+        "start_char": 57,
+        "end_char": 86
+      }
+    },
+    {
+      "type": "BR",
+      "status": "новое",
+      "description": "Игра не должна требовать установки.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-04T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "id": "TTT-000021",
+      "trace_span": {
+        "start_char": 87,
+        "end_char": 116
+      }
+    },
+    {
+      "type": "BR",
+      "status": "новое",
+      "description": "Игра должна запускаться мгновенно.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-04T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "id": "TTT-000022",
+      "trace_span": {
+        "start_char": 117,
+        "end_char": 156
+      }
+    },
+    {
+      "type": "BR",
+      "status": "новое",
+      "description": "Игра должна быть стабильной даже при слабом интернете или его отсутствии.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-04T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "id": "TTT-000023",
+      "trace_span": {
+        "start_char": 157,
+        "end_char": 268
+      }
+    },
+    {
+      "type": "BR",
+      "status": "новое",
+      "description": "Игра не должна зависать, лагать при клике или иметь некорректные состояния интерфейса.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-04T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "id": "TTT-000024",
+      "trace_span": {
+        "start_char": 269,
+        "end_char": 385
+      }
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Пользователь должен иметь возможность запустить игру без необходимости настройки параметров.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000001",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000025"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Игра должна автоматически настроиться при запуске, исключая необходимость вручную устанавливать параметры.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000001",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000026"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Интерфейс игры должен быть интуитивно понятным и не требовать дополнительной информации для начала игры.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000001",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000027"
+    },
+    {
+      "type": "NFR",
+      "status": "новое",
+      "description": "Игра должна быть доступна для запуска в минимально необходимом количестве кликов.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000001",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000028"
+    },
+    {
+      "type": "NFR",
+      "status": "новое",
+      "description": "Игра должна предоставлять прямой доступ к началу игры без необходимости прохождения дополнительных шагов.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000001",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000029"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Игра должна запускаться без необходимости регистрации пользователя.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000002",
+      "created_at": "2023-10-05T14:48:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000030"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Игра должна быть доступна для запуска в течение менее чем одной секунды.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000002",
+      "created_at": "2023-10-05T14:48:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000031"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Игра должна быть доступна для запуска без предварительного обучения или инструктажа.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000002",
+      "created_at": "2023-10-05T14:48:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000032"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Игра должна быть совместима с мобильными устройствами и компьютерами.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000002",
+      "created_at": "2023-10-05T14:48:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000033"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Игра должна быть легко доступна для пользователей, которые хотят развлечься в перерыве или скоротать время.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000002",
+      "created_at": "2023-10-05T14:48:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000034"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Игровое поле должно загружаться полностью и быть доступным для использования в течение 2 секунд после запуска игры.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000003",
+      "created_at": "2023-10-04T15:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000035"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Игровое поле должно быть полностью нарисовано и готово к использованию в течение первых 2 секунд после запуска игры.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000003",
+      "created_at": "2023-10-04T15:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000036"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Игровое поле должно быть доступно для взаимодействия с пользователем в течение первых 2 секунд после запуска игры.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000003",
+      "created_at": "2023-10-04T15:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000037"
+    },
+    {
+      "type": "NFR",
+      "status": "новое",
+      "description": "Игровое поле не должно содержать никаких анимаций или эффектов, которые могут замедлить процесс загрузки.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000003",
+      "created_at": "2023-10-04T15:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000038"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Игровое поле должно быть прямоугольной формы с размерами 3x3 клеток.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000004",
+      "created_at": "2023-10-05T12:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000039"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Каждая клетка игрового поля должна быть квадратной формы.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000004",
+      "created_at": "2023-10-05T12:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000040"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Игровое поле должно быть доступно для отображения на экране устройства.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000004",
+      "created_at": "2023-10-05T12:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000041"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Игровое поле должно быть разделено на три строки и три столбца.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000004",
+      "created_at": "2023-10-05T12:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000042"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Каждая клетка игрового поля должна быть идентифицируемой.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000004",
+      "created_at": "2023-10-05T12:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000043"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Игроки могут выбрать символ для игры (крестик или нолик) перед началом игры.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000005",
+      "created_at": "2023-10-04T12:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000044"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Игроки могут вводить свои ходы на игровом поле.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000005",
+      "created_at": "2023-10-04T12:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000045"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Игроки могут по очереди делать ходы, начиная с первого игрока.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000005",
+      "created_at": "2023-10-04T12:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000046"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Игроки могут видеть текущее состояние игрового поля.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000005",
+      "created_at": "2023-10-04T12:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000047"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Игроки могут продолжать игру до тех пор, пока не будет выявлен победитель или ничья.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000005",
+      "created_at": "2023-10-04T12:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000048"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Игроки могут начать новую игру после завершения текущей.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000005",
+      "created_at": "2023-10-04T12:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000049"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Пользователь должен иметь возможность выбрать другого пользователя на том же устройстве или компьютере в качестве соперника для игры.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000006",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000050"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Система должна поддерживать выбор соперника из списка активных пользователей на том же устройстве или компьютере.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000006",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000051"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Пользователь должен иметь возможность начать игру с выбранным соперником на том же устройстве или компьютере.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000006",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000052"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Система должна обеспечивать безопасность и приватность, предотвращая выбор одного пользователя самим собой в качестве соперника.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000006",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000053"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Пользователь должен иметь возможность отменить выбор соперника и начать игру с другим пользователем.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000006",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000054"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "По умолчанию крестик начинает игру.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000007",
+      "created_at": "2023-10-05T14:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000055"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Игрок должен иметь возможность выбрать, кто начинает игру.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000007",
+      "created_at": "2023-10-05T14:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000056"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Выбор игрока, кто начинает игру, должен быть доступен на экране загрузки или в начале игры.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000007",
+      "created_at": "2023-10-05T14:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000057"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Выбор игрока, кто начинает игру, должен быть сохранен между сессиями игры.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000007",
+      "created_at": "2023-10-05T14:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000058"
+    },
+    {
+      "type": "FR",
+      "status": "new",
+      "description": "После каждого хода, игровое поле должно четко указывать, чья очередь следующего хода.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000008",
+      "created_at": "2023-10-05T14:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000059"
+    },
+    {
+      "type": "FR",
+      "status": "new",
+      "description": "Игровое поле должно обновляться в реальном времени после каждого хода.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000008",
+      "created_at": "2023-10-05T14:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000060"
+    },
+    {
+      "type": "FR",
+      "status": "new",
+      "description": "После каждого хода, игровое поле должно отображать текущего игрока (крестик или нолик) в специальном индикаторе.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000008",
+      "created_at": "2023-10-05T14:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000061"
+    },
+    {
+      "type": "FR",
+      "status": "new",
+      "description": "После каждого хода, игровое поле должно проверять наличие победителя и сообщать об этом игрокам.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000008",
+      "created_at": "2023-10-05T14:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000062"
+    },
+    {
+      "type": "FR",
+      "status": "new",
+      "description": "После каждого хода, игровое поле должно блокировать ячейку, в которую уже был сделан ход.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000008",
+      "created_at": "2023-10-05T14:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000063"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Система должна мгновенно определить победителя, как только три одинаковых символа (крестики или нолики) выстроятся в ряд по горизонтали, вертикали или диагонали.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000009",
+      "created_at": "2023-10-05T14:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000064"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Система должна визуально выделить выигрышную линию, состоящую из трех одинаковых символов.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000009",
+      "created_at": "2023-10-05T14:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000065"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Визуальное выделение линии должно быть выполнено с использованием цвета, подчеркивания или другой подходящей визуальной метки.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000009",
+      "created_at": "2023-10-05T14:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000066"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Система должна мгновенно объявить победителя после того, как три одинаковых символа выстроятся в ряд.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000009",
+      "created_at": "2023-10-05T14:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000067"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Система должна определить победителя и визуально выделить линию мгновенно, без задержек.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000009",
+      "created_at": "2023-10-05T14:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000068"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Игра должна проверять, заполнены ли все клетки поля при каждом ходе.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000010",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000069"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Если все клетки заполнены и нет победителя, игра должна сообщать о ничьей.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000010",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000070"
+    },
+    {
+      "type": "NFR",
+      "status": "новое",
+      "description": "Игра должна обеспечивать быструю и точную проверку состояния поля.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000010",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000071"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Приложение должно автоматически обрабатывать результаты игры, чтобы определить победителя или ничью без необходимости ручного подтверждения.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000011",
+      "created_at": "2023-10-05T14:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000072"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Приложение должно автоматически отправлять результаты игры на сервер для обработки без необходимости дополнительного клика пользователя.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000011",
+      "created_at": "2023-10-05T14:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000073"
+    },
+    {
+      "type": "NFR",
+      "status": "новое",
+      "description": "Время отклика системы на обработку результатов игры и отправку их на сервер должно быть менее 5 секунд.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000011",
+      "created_at": "2023-10-05T14:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000074"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "При нажатии на свободную клетку игрового поля игрок должен автоматически поставить свой символ в эту клетку.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000012",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000075"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Игровое поле должно быть доступно для взаимодействия пользователя, то есть клетки должны отвечать на клики или тапы.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000012",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000076"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Приложение должно определить, является ли клетка свободной перед тем, как поставить символ игрока.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000012",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000077"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "После выполнения действия постановки символа игрок должен быть автоматически перенаправлен на следующую свободную клетку.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000012",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000078"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Символ игрока должен быть правильно отображен на игровом поле после выполнения действия.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000012",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000079"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "При попытке пользователя ходить в занятую клетку на игровом поле игры 'Тики-нолики', действие должно быть игнорировано.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000013",
+      "created_at": "2023-10-05T14:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000080"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "При попытке пользователя ходить не в свою очередь на игровом поле игры 'Тики-нолики', действие должно быть игнорировано.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000013",
+      "created_at": "2023-10-05T14:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000081"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "При попытке пользователя ходить в занятую клетку или не в свою очередь на игровом поле игры 'Тики-нолики', должен сопровождаться мягкий визуальный сигнал.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000013",
+      "created_at": "2023-10-05T14:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000082"
+    },
+    {
+      "type": "FR",
+      "status": "new",
+      "description": "Игровое поле должно быть минималистичным с контрастными символами крестиков и ноликов.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000014",
+      "created_at": "2023-10-05T12:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000083"
+    },
+    {
+      "type": "FR",
+      "status": "new",
+      "description": "Статус игры должен быть читаемым и отображаться на экране в форматах: «Ход крестиков», «Победили нолики!», «Ничья».",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000014",
+      "created_at": "2023-10-05T12:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000084"
+    },
+    {
+      "type": "FR",
+      "status": "new",
+      "description": "Интерфейс должен отсутствовать отвлекающих элементов, баннеров или обязательных всплывающих окон.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000014",
+      "created_at": "2023-10-05T12:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000085"
+    },
+    {
+      "type": "FR",
+      "status": "new",
+      "description": "При открытии игры пользователь должен видеть готовое игровое поле размером 3×3.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000014",
+      "created_at": "2023-10-05T12:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000086"
+    },
+    {
+      "type": "FR",
+      "status": "new",
+      "description": "Пользователь должен иметь возможность по очереди с соперником ставить крестики и нолики на игровое поле.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000014",
+      "created_at": "2023-10-05T12:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000087"
+    },
+    {
+      "type": "FR",
+      "status": "new",
+      "description": "Соперником может быть другой человек на том же устройстве или компьютер.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000014",
+      "created_at": "2023-10-05T12:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000088"
+    },
+    {
+      "type": "FR",
+      "status": "new",
+      "description": "По умолчанию игра должна начинаться с пустого игрового поля.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000014",
+      "created_at": "2023-10-05T12:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000089"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "После завершения партии должна быть кнопка «Начать заново», которая очищает игровое поле.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000015",
+      "created_at": "2023-10-04T12:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000090"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "После нажатия кнопки «Начать заново» игровое поле должно быть очищено.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000015",
+      "created_at": "2023-10-04T12:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000091"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "После нажатия кнопки «Начать заново» ход должен быть возвращен стартовому игроку.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000015",
+      "created_at": "2023-10-04T12:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000092"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "После нажатия кнопки «Начать заново» текущий счёт сессии должен сохраняться.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000015",
+      "created_at": "2023-10-04T12:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000093"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Статистика побед, проигрышей и ничьих должна отображаться рядом с игровым полем.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000016",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000094"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Статистика должна обновляться в реальном времени после каждого хода.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000016",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000095"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Статистика должна быть доступна без необходимости переключаться между экранами.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000016",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000096"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Статистика должна быть легко читаемой и понятной для пользователя.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000016",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000097"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Статистика должна быть доступна для просмотра в течение всей игровой сессии.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000016",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000098"
+    },
+    {
+      "type": "FR",
+      "status": "new",
+      "description": "Игрок должен иметь возможность выбрать уровень сложности для режима «человек против компьютера».",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000017",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000099"
+    },
+    {
+      "type": "FR",
+      "status": "new",
+      "description": "Уровень сложности «лёгкий» должен обеспечивать хаотичные ходы компьютера.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000017",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000100"
+    },
+    {
+      "type": "FR",
+      "status": "new",
+      "description": "Уровень сложности «средний» должен обеспечивать базовую защиту и случайные атаки компьютера.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000017",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000101"
+    },
+    {
+      "type": "FR",
+      "status": "new",
+      "description": "Уровень сложности «сложный» должен обеспечивать оптимальную стратегию, гарантирующую ничью или проигрыш для компьютера.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000017",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000102"
+    },
+    {
+      "type": "FR",
+      "status": "new",
+      "description": "Переключение режима «человек против компьютера» должно происходить до начала партии или через меню, не прерывая текущую игру.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000018",
+      "created_at": "2023-10-05T14:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000103"
+    },
+    {
+      "type": "FR",
+      "status": "new",
+      "description": "Перед началом партии игрок должен иметь возможность выбрать режим «человек против компьютера».",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000018",
+      "created_at": "2023-10-05T14:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000104"
+    },
+    {
+      "type": "FR",
+      "status": "new",
+      "description": "Режим «человек против компьютера» должен быть доступен через меню игры.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000018",
+      "created_at": "2023-10-05T14:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000105"
+    },
+    {
+      "type": "FR",
+      "status": "new",
+      "description": "Переключение режима «человек против компьютера» не должно прерывать текущую игру.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000018",
+      "created_at": "2023-10-05T14:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000106"
+    },
+    {
+      "type": "FR",
+      "status": "new",
+      "description": "После выбора режима «человек против компьютера» игра должна автоматически перейти в этот режим.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000018",
+      "created_at": "2023-10-05T14:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000107"
+    },
+    {
+      "type": "FR",
+      "status": "new",
+      "description": "Игрок должен иметь возможность выбрать, кто начинает партию.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000018",
+      "created_at": "2023-10-05T14:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000108"
+    },
+    {
+      "type": "FR",
+      "status": "new",
+      "description": "После каждого хода игра должна четко показывать, чья сейчас очередь.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000018",
+      "created_at": "2023-10-05T14:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000109"
+    },
+    {
+      "type": "FR",
+      "status": "new",
+      "description": "Игра должна автоматически отслеживать комбинации.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000018",
+      "created_at": "2023-10-05T14:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000110"
+    },
+    {
+      "type": "FR",
+      "status": "new",
+      "description": "Как только игра обнаруживает выигрышную комбинацию, она должна немедленно завершить партию.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000018",
+      "created_at": "2023-10-05T14:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000111"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Игра должна автоматически изменять свои элементы интерфейса и размеры объектов в соответствии с размером экрана пользователя.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000019",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000112"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Игра должна поддерживать различные разрешения экрана и обеспечивать корректное отображение на устройствах с различными соотношениями сторон.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000019",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000113"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Игра должна корректно масштабироваться при изменении ориентации экрана.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000019",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000114"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Игра должна обеспечивать адаптивное отображение элементов интерфейса, чтобы они были доступны и удобны для пользователей с разными размерами экрана.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000019",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000115"
+    },
+    {
+      "type": "NFR",
+      "status": "новое",
+      "description": "Игра не должна ухудшать производительность при масштабировании под различные размеры экрана.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000019",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000116"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Пользователь должен иметь возможность перемещать кубики с помощью жестов прикасания.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000020",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000117"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Прикасание к кубику должно активировать его перемещение.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000020",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000118"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Пользователь должен иметь возможность остановить перемещение кубика, отпустив его.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000020",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000119"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Прикасание к другому кубику или полю должно изменить направление перемещения текущего кубика.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000020",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000120"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Пользователь должен иметь возможность использовать жесты прикасания для быстрого перемещения кубика.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000020",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000121"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Игра 'ики-нолики' должна быть доступна для запуска без необходимости установки на устройство пользователя.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000021",
+      "created_at": "2023-10-05T14:48:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000122"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Игра 'ики-нолики' должна загружаться из облачного хранилища или CDN при запуске.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000021",
+      "created_at": "2023-10-05T14:48:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000123"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Игра 'ики-нолики' должна быть доступна для запуска из браузера без необходимости загрузки на локальное устройство.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000021",
+      "created_at": "2023-10-05T14:48:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000124"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Игра 'ики-нолики' должна быть доступна для запуска через веб-приложение или мобильное приложение, которое загружает игру из облачного хранилища.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000021",
+      "created_at": "2023-10-05T14:48:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000125"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Игра 'ики-нолики' должна поддерживать работу в автономном режиме без доступа к интернету, если это возможно.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000021",
+      "created_at": "2023-10-05T14:48:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000126"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Игра должна быть оптимизирована для быстрого запуска, чтобы игроки могли начать игру в течение нескольких секунд.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000022",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000127"
+    },
+    {
+      "type": "NFR",
+      "status": "новое",
+      "description": "Время загрузки игры не должно превышать 5 секунд.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000022",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000128"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Игра должна автоматически загружать необходимые ресурсы при запуске, чтобы минимизировать время ожидания.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000022",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000129"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Игра должна быть оптимизирована для быстрого отклика на команды пользователя, чтобы игроки могли начать играть без задержек.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000022",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000130"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Игра должна загружаться быстро, даже при слабом интернете или его отсутствии.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000023",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000131"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Игра должна быть доступна для использования без постоянного подключения к интернету.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000023",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000132"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Игра должна сохранять состояние игры даже при прерывании подключения к интернету.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000023",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000133"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Игра должна предоставлять возможность играть в автономном режиме, когда подключение к интернету недоступно.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000023",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000134"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Игра должна обеспечивать стабильную работу даже при низкой скорости интернет-соединения.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000023",
+      "created_at": "2023-10-05T14:30:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000135"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "При каждом клике на свободную клетку игрового поля, игра должна немедленно обновить состояние этой клетки без задержек или лагов.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000024",
+      "created_at": "2023-10-05T12:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000136"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "При каждом клике на игровом поле, интерфейс должен отреагировать мгновенно и без видимых задержек.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000024",
+      "created_at": "2023-10-05T12:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000137"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "При каждом клике на игровом поле, интерфейс должен сохранять корректное состояние без появления некорректных элементов или состояний.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000024",
+      "created_at": "2023-10-05T12:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000138"
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "При каждом клике на игровом поле, игра должна обрабатывать действия пользователя без зависаний или лагов.",
+      "author": "LLM-Agent-Detailer",
+      "version": "1.0.0",
+      "parent_id": "TTT-000024",
+      "created_at": "2023-10-05T12:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "3",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      },
+      "id": "TTT-000139"
+    },
+    {
+      "project_id": "4",
+      "type": "FR",
+      "status": "новое",
+      "priority": "1 этап",
+      "id": "TTT-2-000001",
+      "description": "Возможность быстро начать игру без лишних настроек.",
+      "note": "",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "trace_start_char": "0",
+      "trace_end_char": "0",
+      "parent_id": "",
+      "verification_status": "не верифицировано",
+      "created_at": "YYYY-MM-DDTHH:mm:ssZ",
+      "acceptance_criteria_str": "",
+      "user_roles": [],
+      "tags": [],
+      "acceptance_criteria": []
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Отсутствие необходимости регистрации для игры.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "YYYY-MM-DDTHH:mm:ssZ",
+      "acceptance_criteria": [],
+      "project_id": "4",
+      "id": "TTT-2-000002",
+      "trace_span": {
+        "start_char": 47,
+        "end_char": 65
+      }
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Отсутствие необходимости обучения перед началом игры.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "YYYY-MM-DDTHH:mm:ssZ",
+      "acceptance_criteria": [],
+      "project_id": "4",
+      "id": "TTT-2-000003",
+      "trace_span": {
+        "start_char": 66,
+        "end_char": 87
+      }
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Отсутствие долгой загрузки игры.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "YYYY-MM-DDTHH:mm:ssZ",
+      "acceptance_criteria": [],
+      "project_id": "4",
+      "id": "TTT-2-000004",
+      "trace_span": {
+        "start_char": 88,
+        "end_char": 106
+      }
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Игровое поле должно быть размером 3×3 клетки.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-10T10:10:10Z",
+      "acceptance_criteria": [],
+      "project_id": "4",
+      "id": "TTT-2-000005",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 46
+      }
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Возможность по очереди с соперником ставить крестики и нолики.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-10T10:10:10Z",
+      "acceptance_criteria": [],
+      "project_id": "4",
+      "id": "TTT-2-000006",
+      "trace_span": {
+        "start_char": 47,
+        "end_char": 86
+      }
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Соперником может быть другой человек на том же устройстве или компьютер.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-10T10:10:10Z",
+      "acceptance_criteria": [],
+      "project_id": "4",
+      "id": "TTT-2-000007",
+      "trace_span": {
+        "start_char": 87,
+        "end_char": 124
+      }
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "По умолчанию первым ходит крестик, но должна быть возможность выбрать, кто начинает.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-10T10:10:10Z",
+      "acceptance_criteria": [],
+      "project_id": "4",
+      "id": "TTT-2-000008",
+      "trace_span": {
+        "start_char": 125,
+        "end_char": 164
+      }
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "После каждого хода игра должна чётко показывать, чья сейчас очередь.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-10T10:10:10Z",
+      "acceptance_criteria": [],
+      "project_id": "4",
+      "id": "TTT-2-000009",
+      "trace_span": {
+        "start_char": 165,
+        "end_char": 194
+      }
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Игра должна автоматически отслеживать комбинации. Как только три одинаковых символа выстроятся в ряд по горизонтали, вертикали или диагонали, система должна мгновенно объявлять победителя и визуально выделять выигрышную линию.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-10T10:10:10Z",
+      "acceptance_criteria": [],
+      "project_id": "4",
+      "id": "TTT-2-000010",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      }
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Если все 9 клеток заполнены, а победителя нет, игра должна сообщать о ничьей.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-10T10:10:10Z",
+      "acceptance_criteria": [],
+      "project_id": "4",
+      "id": "TTT-2-000011",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      }
+    },
+    {
+      "type": "CONSTRAINT",
+      "status": "новое",
+      "description": "Ни победа, ни ничья не должны требовать ручного подтверждения или дополнительного клика.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-10T10:10:10Z",
+      "acceptance_criteria": [],
+      "project_id": "4",
+      "id": "TTT-2-000012",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      }
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Управление должно быть интуитивным: один клик или тап по свободной клетке ставит мой символ.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-10T10:10:10Z",
+      "acceptance_criteria": [],
+      "project_id": "4",
+      "id": "TTT-2-000013",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 68
+      }
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Если я пытаюсь ходить в занятую клетку или не в свою очередь, действие должно игнорироваться или сопровождаться мягким визуальным сигналом.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-10T10:10:10Z",
+      "acceptance_criteria": [],
+      "project_id": "4",
+      "id": "TTT-2-000014",
+      "trace_span": {
+        "start_char": 69,
+        "end_char": 145
+      }
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Интерфейс минималистичный: контрастные символы, читаемый статус («Ход крестиков», «Победили нолики!», «Ничья»), отсутствие отвлекающих элементов, баннеров или обязательных всплывающих окон.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-10T10:10:10Z",
+      "acceptance_criteria": [],
+      "project_id": "4",
+      "id": "TTT-2-000015",
+      "trace_span": {
+        "start_char": 146,
+        "end_char": 258
+      }
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "После завершения партии должна быть кнопка «Начать заново», которая очищает поле, возвращает ход стартовому игроку и сохраняет счёт текущей сессии.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-10T10:10:10Z",
+      "acceptance_criteria": [],
+      "project_id": "4",
+      "id": "TTT-2-000016",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 0
+      }
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Статистику (победы / проигрыши / ничьи) нужно отображать рядом с полем для быстрого понимания прогресса за игровую сессию без необходимости переключения между экранами.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-10T10:10:10Z",
+      "acceptance_criteria": [],
+      "project_id": "4",
+      "id": "TTT-2-000017",
+      "trace_span": {
+        "start_char": 68,
+        "end_char": 147
+      }
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Если предусмотрен режим «человек против компьютера», я хочу выбирать уровень сложности: лёгкий (оппонент ходит хаотично), средний (базовая защита и случайные атаки) и сложный (оптимальная стратегия, гарантирующая мне ничью или проигрыш). Переключение режима должно происходить до начала партии или через меню, не прерывая текущую игру.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-10T10:10:10Z",
+      "acceptance_criteria": [],
+      "project_id": "4",
+      "id": "TTT-2-000018",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 248
+      }
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Игра должна одинаково удобно работать на компьютере: корректно масштабироваться под размер экрана.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "YYYY-MM-DDTHH:mm:ssZ",
+      "acceptance_criteria": [],
+      "project_id": "4",
+      "id": "TTT-2-000019",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 68
+      }
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Игра должна поддерживать тач-управление.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "YYYY-MM-DDTHH:mm:ssZ",
+      "acceptance_criteria": [],
+      "project_id": "4",
+      "id": "TTT-2-000020",
+      "trace_span": {
+        "start_char": 69,
+        "end_char": 87
+      }
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Игра не должна требовать установки.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "YYYY-MM-DDTHH:mm:ssZ",
+      "acceptance_criteria": [],
+      "project_id": "4",
+      "id": "TTT-2-000021",
+      "trace_span": {
+        "start_char": 88,
+        "end_char": 103
+      }
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Запуск игры должен быть мгновенным.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "YYYY-MM-DDTHH:mm:ssZ",
+      "acceptance_criteria": [],
+      "project_id": "4",
+      "id": "TTT-2-000022",
+      "trace_span": {
+        "start_char": 104,
+        "end_char": 116
+      }
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Игра должна быть стабильной даже при слабом интернете или его отсутствии.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "YYYY-MM-DDTHH:mm:ssZ",
+      "acceptance_criteria": [],
+      "project_id": "4",
+      "id": "TTT-2-000023",
+      "trace_span": {
+        "start_char": 117,
+        "end_char": 146
+      }
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "В игре не должно быть зависаний, лагов при клике или некорректных состояний интерфейса.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "YYYY-MM-DDTHH:mm:ssZ",
+      "acceptance_criteria": [],
+      "project_id": "4",
+      "id": "TTT-2-000024",
+      "trace_span": {
+        "start_char": 147,
+        "end_char": 193
+      }
+    },
+    {
+      "type": "BR",
+      "status": "новое",
+      "description": "Игра должна быть простой для использования, без необходимости регистрации или обучения.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-04T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "4",
+      "id": "TTT-2-000025",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 65
+      }
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Игра должна быть доступна для быстрого запуска и сразу показывать готовое игровое поле.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-04T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "4",
+      "id": "TTT-2-000026",
+      "trace_span": {
+        "start_char": 66,
+        "end_char": 185
+      }
+    },
+    {
+      "type": "NFR",
+      "status": "новое",
+      "description": "Игра не должна требовать регистрацию или обучение.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-04T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "4",
+      "id": "TTT-2-000027",
+      "trace_span": {
+        "start_char": 186,
+        "end_char": 257
+      }
+    },
+    {
+      "type": "UR",
+      "status": "новое",
+      "description": "Игра должна быть доступна для использования в любое время, например, в перерыве или для скоротки времени.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-04T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "4",
+      "id": "TTT-2-000028",
+      "trace_span": {
+        "start_char": 258,
+        "end_char": 369
+      }
+    },
+    {
+      "type": "BR",
+      "status": "новое",
+      "description": "Игровое поле должно быть размером 3×3.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-04T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "4",
+      "id": "TTT-2-000029",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 56
+      }
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Игроки могут по очереди ставить крестики и нолики на игровом поле.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-04T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "4",
+      "id": "TTT-2-000030",
+      "trace_span": {
+        "start_char": 57,
+        "end_char": 98
+      }
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Соперником может быть другой человек на том же устройстве или компьютер.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-04T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "4",
+      "id": "TTT-2-000031",
+      "trace_span": {
+        "start_char": 99,
+        "end_char": 156
+      }
+    },
+    {
+      "type": "UR",
+      "status": "новое",
+      "description": "По умолчанию первым ходит крестик, но игрок должен иметь возможность выбрать, кто начинает.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-04T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "4",
+      "id": "TTT-2-000032",
+      "trace_span": {
+        "start_char": 157,
+        "end_char": 268
+      }
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "После каждого хода игра должна четко показывать, чья сейчас очередь.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-04T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "4",
+      "id": "TTT-2-000033",
+      "trace_span": {
+        "start_char": 269,
+        "end_char": 358
+      }
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Система должна мгновенно объявлять победителя и визуально выделять выигрышную линию, как только три одинаковых символа выстроятся в ряд по горизонтали, вертикали или диагонали.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-05T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "4",
+      "id": "TTT-2-000034",
+      "trace_span": {
+        "start_char": 46,
+        "end_char": 98
+      }
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Игра должна сообщать о ничьей, если все 9 клеток заполнены, а победителя нет.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-05T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "4",
+      "id": "TTT-2-000035",
+      "trace_span": {
+        "start_char": 99,
+        "end_char": 146
+      }
+    },
+    {
+      "type": "UR",
+      "status": "новое",
+      "description": "Победа или ничья не должны требовать ручного подтверждения или дополнительного клика.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-05T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "4",
+      "id": "TTT-2-000036",
+      "trace_span": {
+        "start_char": 147,
+        "end_char": 186
+      }
+    },
+    {
+      "type": "BR",
+      "status": "новое",
+      "description": "Управление должно быть интуитивным: один клик или тап по свободной клетке ставит мой символ.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-04T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "4",
+      "id": "TTT-2-000037",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 85
+      }
+    },
+    {
+      "type": "BR",
+      "status": "новое",
+      "description": "Если я пытаюсь ходить в занятую клетку или не в свою очередь, действие должно игнорироваться или сопровождаться мягким визуальным сигналом.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-04T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "4",
+      "id": "TTT-2-000038",
+      "trace_span": {
+        "start_char": 86,
+        "end_char": 195
+      }
+    },
+    {
+      "type": "BR",
+      "status": "новое",
+      "description": "Интерфейс минималистичный: контрастные символы, читаемый статус («Ход крестиков», «Победили нолики!», «Ничья»), отсутствие отвлекающих элементов, баннеров или обязательных всплывающих окон.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-04T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "4",
+      "id": "TTT-2-000039",
+      "trace_span": {
+        "start_char": 196,
+        "end_char": 457
+      }
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "После завершения партии должна быть кнопка «Начать заново», которая очищает поле, возвращает ход стартовому игроку и сохраняет счёт текущей сессии.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-04T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "4",
+      "id": "TTT-2-000040",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 98
+      }
+    },
+    {
+      "type": "BR",
+      "status": "новое",
+      "description": "Статистика (победы / проигрыши / ничьи) должна отображаться рядом с игровым полем, чтобы игрок мог видеть свой прогресс за текущую игровую сессию без необходимости переключаться между экранами.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-04T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "4",
+      "id": "TTT-2-000041",
+      "trace_span": {
+        "start_char": 99,
+        "end_char": 256
+      }
+    },
+    {
+      "type": "FR",
+      "status": "новое",
+      "description": "Если предусмотрен режим «человек против компьютера», игрок должен иметь возможность выбирать уровень сложности: лёгкий (оппонент ходит хаотично), средний (базовая защита и случайные атаки) и сложный (оптимальная стратегия, гарантирующая ему ничью или проигрыш).",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-05T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "4",
+      "id": "TTT-2-000042",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 469
+      }
+    },
+    {
+      "type": "UR",
+      "status": "новое",
+      "description": "Переключение режима «человек против компьютера» должно происходить до начала партии или через меню, не прерывая текущую игру.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-05T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "4",
+      "id": "TTT-2-000043",
+      "trace_span": {
+        "start_char": 470,
+        "end_char": 689
+      }
+    },
+    {
+      "type": "BR",
+      "status": "новое",
+      "description": "Игра должна корректно масштабироваться под размер экрана.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-04T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "4",
+      "id": "TTT-2-000044",
+      "trace_span": {
+        "start_char": 0,
+        "end_char": 65
+      }
+    },
+    {
+      "type": "BR",
+      "status": "новое",
+      "description": "Игра должна поддерживать тач-управление.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-04T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "4",
+      "id": "TTT-2-000045",
+      "trace_span": {
+        "start_char": 66,
+        "end_char": 98
+      }
+    },
+    {
+      "type": "BR",
+      "status": "новое",
+      "description": "Игра не должна требовать установки.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-04T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "4",
+      "id": "TTT-2-000046",
+      "trace_span": {
+        "start_char": 99,
+        "end_char": 126
+      }
+    },
+    {
+      "type": "BR",
+      "status": "новое",
+      "description": "Игра должна запускаться мгновенно.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-04T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "4",
+      "id": "TTT-2-000047",
+      "trace_span": {
+        "start_char": 127,
+        "end_char": 156
+      }
+    },
+    {
+      "type": "BR",
+      "status": "новое",
+      "description": "Игра должна быть стабильной даже при слабом интернете или его отсутствии.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-04T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "4",
+      "id": "TTT-2-000048",
+      "trace_span": {
+        "start_char": 157,
+        "end_char": 268
+      }
+    },
+    {
+      "type": "BR",
+      "status": "новое",
+      "description": "Игра не должна зависать, лагать при клике или иметь некорректные состояния интерфейса.",
+      "author": "LLM-Agent",
+      "version": "1.0.0",
+      "parent_id": null,
+      "created_at": "2023-10-04T00:00:00Z",
+      "acceptance_criteria": [],
+      "project_id": "4",
+      "id": "TTT-2-000049",
+      "trace_span": {
+        "start_char": 269,
+        "end_char": 385
+      }
+    }
+  ]
+}

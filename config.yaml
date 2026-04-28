@@ -1,0 +1,38 @@
+app:
+  name: codeui
+  version: "0.2.0"
+
+server:
+  host: "127.0.0.1"
+  port: 8088
+  reload: false
+
+logging:
+  level: INFO
+  format: "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
+
+codecollector:
+  # Путь до соседнего проекта codecollector.
+  root_dir: "../codecollector"
+  python: "python"
+  module: "codecollector"
+  command_timeout_sec: 900
+  runs_dir: ".runs"
+  state_dir: ".state"
+  workspaces_dir: ".workspaces"
+
+requirements:
+  sources:
+    - id: "demo"
+      type: "json_file"
+      path: "data/requirements.json"
+      enabled: true
+
+change_requests:
+  storage_dir: "data/change_requests"
+
+ui:
+  poll_interval_ms: 1500
+  show_raw_json: true
+  show_debug_artifacts: true
+  state_file: "data/ui_state.json"

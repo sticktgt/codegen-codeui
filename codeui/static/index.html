@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>codeui</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand"><span class="brand-mark">◆</span><span>codeui</span></div>
+    <nav class="main-nav">
+      <button class="nav-item active" data-view="requirements-view">Требования</button>
+      <button class="nav-item" data-view="requests-view">Запросы</button>
+      <button class="nav-item" data-view="runs-view">Все запуски</button>
+    </nav>
+    <div class="status-pill" id="api-status">API</div>
+  </header>
+
+  <section class="context-bar" id="project-panel">
+    <div class="field-row compact">
+      <label>Проект</label>
+      <select id="project-select"></select>
+      <button class="btn small" id="select-project-btn">Выбрать</button>
+      <button class="btn small" id="refresh-projects-btn">Обновить</button>
+      <button class="btn small" id="show-register-project-btn">Добавить проект</button>
+    </div>
+    <div class="project-path" id="project-path">Проект не выбран</div>
+    <div class="inline-form hidden" id="register-project-panel">
+      <form id="register-project-form" class="project-register-form">
+        <div class="form-row compact-field"><label>Путь</label><input name="project_root" required placeholder="/home/stickt/llm/my_project"></div>
+        <div class="form-row compact-field"><label>Название</label><input name="project_name" placeholder="опционально"></div>
+        <div class="form-row compact-field small-field"><label>Языки</label><input name="languages" value="python" placeholder="python, javascript"></div>
+        <div class="form-row compact-field"><label>Проверки</label><textarea name="verification_commands" rows="2" placeholder="по одной команде на строку"></textarea></div>
+        <div class="form-row compact-field"><label>Исключения индекса</label><textarea name="index_excludes" rows="2" placeholder="по одному шаблону на строку"></textarea></div>
+        <div class="form-row compact-field"><label>Reference paths</label><textarea name="reference_library_paths" rows="2" placeholder="по одному пути на строку"></textarea></div>
+        <div class="action-row compact-action"><button class="btn small" type="submit">Зарегистрировать</button></div>
+      </form>
+    </div>
+  </section>
+
+  <main class="layout">
+    <section id="requirements-view" class="view active">
+      <div class="toolbar-panel">
+        <div class="field-row grow">
+          <label>Файл требований</label>
+          <input id="requirements-path-input" type="text" placeholder="/path/to/requirements.json">
+          <button class="btn small" id="set-requirements-path-btn">Подключить</button>
+          <button class="btn small" id="reload-requirements-btn">Обновить</button>
+        </div>
+      </div>
+      <div class="split two-columns">
+        <aside class="panel list-panel wide-list">
+          <div class="panel-header compact-header">
+            <h2>Список требований</h2>
+            <span class="counter" id="requirements-count">0</span>
+          </div>
+          <div id="requirements-tree" class="tree-list"></div>
+        </aside>
+        <section class="panel detail-panel">
+          <div id="requirement-detail" class="empty-state">Выберите требование слева.</div>
+        </section>
+      </div>
+    </section>
+
+    <section id="requests-view" class="view">
+      <div class="split two-columns">
+        <aside class="panel list-panel">
+          <div class="panel-header compact-header">
+            <h2>Запросы на изменение</h2>
+            <span class="counter" id="cr-count">0</span>
+          </div>
+          <div id="cr-list" class="list"></div>
+        </aside>
+        <section class="panel detail-panel">
+          <div id="cr-detail" class="empty-state">Выберите запрос или создайте его из требования.</div>
+        </section>
+      </div>
+    </section>
+
+    <section id="runs-view" class="view">
+      <div class="split two-columns">
+        <aside class="panel list-panel">
+          <div class="panel-header compact-header">
+            <h2>Все запуски</h2>
+            <span class="counter" id="runs-count">0</span>
+            <button class="btn small" id="refresh-runs-btn">Обновить</button>
+            <button class="btn small" id="show-all-runs-btn">Показать все</button>
+          </div>
+          <div id="run-list" class="list"></div>
+        </aside>
+        <section class="panel detail-panel">
+          <div id="run-detail" class="empty-state">Выберите запуск.</div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
