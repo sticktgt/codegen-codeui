@@ -329,3 +329,82 @@ details summary {
 }
 
 .compact-message { margin: 0 0 6px 0; padding: 4px 6px; border-bottom: 1px solid var(--line-soft); }
+
+/* Compact run review additions */
+.compact-summary,
+.compact-section {
+  display: grid;
+  gap: 8px;
+}
+.compact-kv {
+  grid-template-columns: 145px minmax(0, 1fr);
+}
+.summary-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 8px;
+  margin-top: 2px;
+}
+.compact-list-block {
+  border: 1px solid var(--line-soft);
+  border-radius: 6px;
+  padding: 7px 8px;
+  background: #fbfcfd;
+  min-width: 0;
+}
+.compact-list-block.full-width {
+  margin-top: 8px;
+}
+.compact-list-title {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.compact-list-block ul {
+  margin: 0;
+  padding-left: 16px;
+}
+.compact-list-block li {
+  margin: 2px 0;
+  line-height: 1.35;
+  word-break: break-word;
+}
+.primary-issue {
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  background: #fff7f7;
+  padding: 7px 8px;
+}
+.primary-issue-title {
+  color: var(--danger);
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 3px;
+}
+.primary-issue-message {
+  line-height: 1.35;
+}
+.primary-issue-meta {
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 4px;
+  word-break: break-word;
+}
+.mono-text,
+.path-text {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  word-break: break-word;
+}
+.compact-usage-table td,
+.compact-usage-table th {
+  white-space: nowrap;
+}
+.compact-usage-table td:last-child,
+.compact-usage-table th:last-child {
+  white-space: normal;
+}
+.muted {
+  color: var(--muted);
+}

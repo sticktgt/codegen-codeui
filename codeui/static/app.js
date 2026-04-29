@@ -744,12 +744,16 @@ async function renderRunDetail(runId) {
         <div class="tabs">
           <button class="tab-btn active" data-tab="run-steps">Шаги</button>
           <button class="tab-btn" data-tab="run-checks">Проверки</button>
+          <button class="tab-btn" data-tab="run-apply">Применение</button>
+          <button class="tab-btn" data-tab="run-resources">Ресурсы</button>
           <button class="tab-btn" data-tab="run-diff">Diff</button>
           <button class="tab-btn" data-tab="run-code">Код</button>
           <button class="tab-btn" data-tab="run-test">Тест</button>
         </div>
         <div id="run-steps" class="tab-panel active">${renderSteps(steps)}</div>
         <div id="run-checks" class="tab-panel">${renderChecks(checks)}</div>
+        <div id="run-apply" class="tab-panel">${renderApplyPlan(summary)}</div>
+        <div id="run-resources" class="tab-panel">${renderResources(summary)}</div>
         <div id="run-diff" class="tab-panel">${codeBlock(diff.unified_diff || '')}</div>
         <div id="run-code" class="tab-panel">${renderArtifact(code, 'code')}</div>
         <div id="run-test" class="tab-panel">${renderArtifact(test, 'test')}</div>
@@ -784,13 +788,107 @@ function renderRunContext(runId) {
 }
 
 function renderRunSummary(summary) {
-  return `<div class="kv-grid">
-    <div class="key">Статус</div><div>${statusBadge(summary.status)}</div>
-    <div class="key">Место изменения</div><div>${escapeHtml(summary.selected_target || '—')}</div>
-    <div class="key">Проверки</div><div>${summary.verification_passed ? statusBadge('успешно', 'ok') : statusBadge('не пройдены', 'warn')}</div>
-    <div class="key">Готов к применению</div><div>${summary.merge_ready ? statusBadge('да', 'ok') : statusBadge('нет', 'warn')}</div>
-    <div class="key">Файлы</div><div>${escapeHtml((summary.changed_files || []).join(', ') || '—')}</div>
+  const mainIssue = summary.primary_issue ? renderPrimaryIssue(summary.primary_issue) : '';
+  return `<div class="compact-summary">
+    <div class="kv-grid compact-kv">
+      <div class="key">Статус</div><div>${statusBadge(summary.status)}</div>
+      <div class="key">Операция</div><div>${escapeHtml(summary.final_operation || summary.requested_operation || '—')}</div>
+      <div class="key">Место изменения</div><div class="mono-text">${escapeHtml(summary.selected_target || '—')}</div>
+      <div class="key">Проверки</div><div>${summary.verification_passed ? statusBadge('успешно', 'ok') : statusBadge('не пройдены', 'warn')}</div>
+      <div class="key">Repair</div><div>${summary.repair_used ? statusBadge('использовался', 'warn') : statusBadge('нет')}</div>
+      <div class="key">Тест</div><div>${summary.has_generated_test ? statusBadge('сгенерирован', 'ok') : statusBadge('нет')}</div>
+      <div class="key">Применение</div><div>${summary.merge_ready ? statusBadge('готово', 'ok') : statusBadge('не готово', 'warn')}</div>
+      <div class="key">Рабочая копия</div><div class="path-text">${escapeHtml(summary.workspace_path || '—')}</div>
+    </div>
+    ${mainIssue}
+    <div class="summary-columns">
+      ${renderCompactList('Файлы', summary.changed_files)}
+      ${renderCompactList('Символы', summary.symbols_in_changed_files)}
+      ${renderCompactList('Требования', summary.linked_requirements)}
+      ${renderCompactList('Тестовые команды', summary.recommended_test_commands)}
+    </div>
   </div>`;
+}
+
+function renderPrimaryIssue(issue) {
+  const parts = [];
+  if (issue.check_name) parts.push(`Проверка: ${escapeHtml(issue.check_name)}`);
+  if (issue.code) parts.push(`Код: ${escapeHtml(issue.code)}`);
+  if (issue.file_path) parts.push(`Файл: ${escapeHtml(issue.file_path)}`);
+  if (issue.symbol) parts.push(`Символ: ${escapeHtml(issue.symbol)}`);
+  return `<div class="primary-issue">
+    <div class="primary-issue-title">Основная проблема</div>
+    <div class="primary-issue-message">${escapeHtml(issue.message || 'Причина не указана')}</div>
+    ${parts.length ? `<div class="primary-issue-meta">${parts.join('<br>')}</div>` : ''}
+  </div>`;
+}
+
+function renderCompactList(title, values) {
+  const items = Array.isArray(values) ? values.filter(Boolean) : [];
+  return `<div class="compact-list-block">
+    <div class="compact-list-title">${escapeHtml(title)}</div>
+    ${items.length ? `<ul>${items.slice(0, 8).map(value => `<li>${escapeHtml(value)}</li>`).join('')}${items.length > 8 ? `<li>и еще ${items.length - 8}</li>` : ''}</ul>` : '<span class="muted">—</span>'}
+  </div>`;
+}
+
+function renderApplyPlan(summary) {
+  const lines = Array.isArray(summary.merge_plan_summary_lines) ? summary.merge_plan_summary_lines : [];
+  return `<div class="compact-section">
+    <div class="kv-grid compact-kv">
+      <div class="key">Режим</div><div>${escapeHtml(summary.merge_mode || '—')}</div>
+      <div class="key">Готов к применению</div><div>${summary.merge_ready ? statusBadge('да', 'ok') : statusBadge('нет', 'warn')}</div>
+      <div class="key">Рабочая копия</div><div class="path-text">${escapeHtml(summary.workspace_path || '—')}</div>
+    </div>
+    <div class="summary-columns">
+      ${renderCompactList('Измененные файлы', summary.changed_files)}
+      ${renderCompactList('Символы', summary.symbols_in_changed_files)}
+      ${renderCompactList('Связанные требования', summary.linked_requirements)}
+      ${renderCompactList('Рекомендуемые проверки', summary.recommended_test_commands)}
+    </div>
+    ${lines.length ? `<div class="compact-list-block full-width"><div class="compact-list-title">Комментарий</div><ul>${lines.map(line => `<li>${escapeHtml(line)}</li>`).join('')}</ul></div>` : ''}
+    ${(summary.warnings || []).length ? `<div class="compact-list-block full-width"><div class="compact-list-title">Предупреждения</div><ul>${summary.warnings.map(line => `<li>${escapeHtml(line)}</li>`).join('')}</ul></div>` : ''}
+  </div>`;
+}
+
+function renderResources(summary) {
+  const rows = [
+    usageRow('Генерация кода', summary.code_generation_usage),
+    usageRow('Генерация теста', summary.test_generation_usage),
+    usageRow('Repair', summary.repair_generation_usage),
+    usageRow('Embeddings', summary.embedding_usage, true),
+  ].filter(Boolean).join('');
+  if (!rows) return '<div class="empty-state">Usage-метрики для этого запуска отсутствуют.</div>';
+  return `<table class="table compact-usage-table"><thead><tr><th>Этап</th><th>Вызовы</th><th>Prompt</th><th>Output</th><th>Total</th><th>Длительность</th><th>Дополнительно</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function usageRow(title, usage, embedding = false) {
+  if (!usage || typeof usage !== 'object') return '';
+  const duration = usage.duration_sec ?? usage.total_duration_sec;
+  const extra = embedding
+    ? [
+        usage.texts_count != null ? `Текстов: ${usage.texts_count}` : '',
+        usage.chars_total != null ? `Символов: ${usage.chars_total}` : '',
+        Array.isArray(usage.models) ? `Модель: ${usage.models.join(', ')}` : '',
+      ].filter(Boolean).join('<br>')
+    : [
+        usage.total_duration_sec != null ? `Всего: ${formatNumber(usage.total_duration_sec)} c` : '',
+        usage.load_duration_sec != null ? `Load: ${formatNumber(usage.load_duration_sec)} c` : '',
+      ].filter(Boolean).join('<br>');
+  return `<tr>
+    <td>${escapeHtml(title)}</td>
+    <td>${escapeHtml(usage.calls ?? '—')}</td>
+    <td>${escapeHtml(usage.prompt_tokens ?? '—')}</td>
+    <td>${escapeHtml(usage.output_tokens ?? '—')}</td>
+    <td>${escapeHtml(usage.total_tokens ?? usage.prompt_tokens ?? '—')}</td>
+    <td>${duration != null ? `${escapeHtml(formatNumber(duration))} c` : '—'}</td>
+    <td>${extra || '—'}</td>
+  </tr>`;
+}
+
+function formatNumber(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return String(value ?? '');
+  return Math.round(number * 100) / 100;
 }
 function renderSteps(steps) {
   return `<table class="table"><thead><tr><th>Шаг</th><th>Статус</th><th>Время</th><th>Токены</th><th>Описание</th></tr></thead><tbody>${(steps || []).map(step => `

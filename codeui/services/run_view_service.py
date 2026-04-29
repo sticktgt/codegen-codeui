@@ -85,6 +85,9 @@ class RunViewService:
             test_generation_usage=self._dict_or_none(execution.get("test_generation_usage")) or self._usage_from_generation(payload.get("external_test_generation")),
             repair_generation_usage=self._dict_or_none(execution.get("repair_generation_usage")) or self._usage_from_generation(payload.get("repair_generation")),
             embedding_usage=self._dict_or_none(execution.get("embedding_usage")),
+            primary_issue=self._primary_issue(verification),
+            merge_plan_summary_lines=self._list(merge_plan.get("summary_lines")),
+            warnings=self._list(payload.get("warnings")),
         )
 
     def steps(self, run_id: str) -> list[StepView]:
@@ -202,6 +205,36 @@ class RunViewService:
                 source="embedding_usage",
             )
         return result
+
+    def _primary_issue(self, verification: dict[str, Any]) -> dict[str, Any] | None:
+        for block in self._list(verification.get("blocks")):
+            if not isinstance(block, dict) or bool(block.get("ok")):
+                continue
+            issues = self._list(block.get("issues"))
+            if issues:
+                first_issue = issues[0]
+                if isinstance(first_issue, dict):
+                    return {
+                        "check_name": block.get("name"),
+                        "severity": first_issue.get("severity") or block.get("severity"),
+                        "code": first_issue.get("code"),
+                        "message": first_issue.get("message") or first_issue.get("error_message") or first_issue.get("reason"),
+                        "file_path": first_issue.get("file_path"),
+                        "symbol": first_issue.get("symbol"),
+                    }
+                return {
+                    "check_name": block.get("name"),
+                    "severity": block.get("severity"),
+                    "message": str(first_issue),
+                }
+            error_message = block.get("error_message")
+            if error_message:
+                return {
+                    "check_name": block.get("name"),
+                    "severity": block.get("severity"),
+                    "message": str(error_message),
+                }
+        return None
 
     def _status_from_steps(self, payload: dict[str, Any]) -> str | None:
         steps = [item for item in self._list(payload.get("steps")) if isinstance(item, dict)]

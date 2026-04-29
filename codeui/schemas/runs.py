@@ -75,6 +75,9 @@ class RunSummaryView(BaseModel):
     test_generation_usage: dict[str, Any] | None = None
     repair_generation_usage: dict[str, Any] | None = None
     embedding_usage: dict[str, Any] | None = None
+    primary_issue: dict[str, Any] | None = None
+    merge_plan_summary_lines: list[str] = Field(default_factory=list)
+    warnings: list[Any] = Field(default_factory=list)
 
 
 class DiffView(BaseModel):
