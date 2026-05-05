@@ -93,8 +93,7 @@ def analyze_change_request(
     service: ChangeRequestService = Depends(get_change_request_service),
     client: CodeCollectorClient = Depends(get_codecollector_client),
 ) -> dict:
-    cr = service.get_change_request(cr_id)
-    service.mark_processing(cr_id, "analyzing")
+    cr = service.mark_processing(cr_id, "analyzing", requested_operation=payload.operation)
     try:
         result = client.analyze_session(
             project_id=cr.project_id,
@@ -122,10 +121,25 @@ def select_target(
     cr = service.get_change_request(cr_id)
     if not cr.session_id:
         raise ApiError("SESSION_NOT_CREATED", "Сначала выполните анализ запроса.", status_code=409)
+    if service.request_quality_status(cr) == "insufficient":
+        raise ApiError(
+            "REQUEST_INSUFFICIENT",
+            "Запрос недостаточно конкретный. Измените название, описание или ограничения и выполните анализ заново.",
+            status_code=409,
+            details={"cr_id": cr_id, "request_quality_status": "insufficient"},
+        )
+    operation = payload.operation or service.effective_operation(cr)
+    if not operation:
+        raise ApiError(
+            "OPERATION_NOT_SELECTED",
+            "Операция изменения не выбрана надежно. Выберите операцию вручную.",
+            status_code=409,
+            details={"cr_id": cr_id},
+        )
     service.mark_processing(cr_id, "selecting_target")
     try:
-        result = client.select_target(session_id=cr.session_id, selected_qualname=payload.selected_qualname)
-        updated = service.update_from_select_result(cr_id, result)
+        result = client.select_target(session_id=cr.session_id, selected_qualname=payload.selected_qualname, operation=operation)
+        updated = service.update_from_select_result(cr_id, result, operation=operation)
         return {"change_request": updated.model_dump(mode="json"), "select_result": result}
     except Exception as exc:
         service.mark_failed(cr_id, error=exc, fallback_status="target_selection_failed")
@@ -140,14 +154,65 @@ def run_change_request(
     client: CodeCollectorClient = Depends(get_codecollector_client),
 ) -> dict:
     cr = service.get_change_request(cr_id)
-    if not cr.session_id:
-        raise ApiError("SESSION_NOT_CREATED", "Сначала выполните анализ запроса.", status_code=409)
-    service.mark_processing(cr_id, "running")
+    block_result = service.generation_block_result(cr, operation_override=payload.operation)
+    if block_result is not None:
+        updated = service.update_from_generate_result(cr_id, block_result)
+        return {"change_request": updated.model_dump(mode="json"), "generate_result": block_result}
+
+    operation = payload.operation or service.effective_operation(cr)
+    selected_qualname = payload.selected_qualname or cr.selected_target or cr.recommended_target
+
+    # A codecollector session becomes unsuitable for a repeated generate after a
+    # completed run (for example verification_failed or ready_for_merge_review).
+    # For UI repeat-run action we create a fresh analyze session for the current
+    # CR fields, then select the known/recommended target before generation.
+    reusable_session_statuses = {"analyzed", "needs_user_decision", "target_selected"}
+    if not cr.session_id or cr.status not in reusable_session_statuses:
+        service.mark_processing(cr_id, "analyzing", requested_operation=operation)
+        try:
+            analyze_result = client.analyze_session(
+                project_id=cr.project_id,
+                title=cr.title,
+                description=cr.description,
+                constraints=cr.constraints,
+                notes=cr.notes,
+                operation=operation,
+                limit=None,
+            )
+            cr = service.update_from_analyze_result(cr_id, analyze_result)
+        except Exception as exc:
+            service.mark_failed(cr_id, error=exc, fallback_status="analysis_failed")
+            raise
+
+        block_result = service.generation_block_result(cr, operation_override=operation)
+        if block_result is not None:
+            updated = service.update_from_generate_result(cr_id, block_result)
+            return {"change_request": updated.model_dump(mode="json"), "generate_result": block_result}
+        selected_qualname = selected_qualname or cr.selected_target or cr.recommended_target
+
+    if not selected_qualname:
+        raise ApiError(
+            "TARGET_NOT_SELECTED",
+            "Место изменения не выбрано. Выберите кандидата или заполните место изменения вручную.",
+            status_code=409,
+            details={"cr_id": cr_id, "status": cr.status},
+        )
+
+    if cr.status != "target_selected":
+        service.mark_processing(cr_id, "selecting_target")
+        try:
+            select_result = client.select_target(session_id=cr.session_id, selected_qualname=selected_qualname, operation=operation)
+            cr = service.update_from_select_result(cr_id, select_result, operation=operation)
+        except Exception as exc:
+            service.mark_failed(cr_id, error=exc, fallback_status="target_selection_failed")
+            raise
+
+    service.mark_processing(cr_id, "running", requested_operation=operation)
     try:
         result = client.generate_session(
             session_id=cr.session_id,
-            selected_qualname=payload.selected_qualname,
-            operation=payload.operation,
+            selected_qualname=selected_qualname,
+            operation=operation,
             limit=payload.limit,
             disable_vector_search=payload.disable_vector_search,
         )
@@ -162,6 +227,7 @@ def run_change_request(
 def apply_last_run(
     cr_id: str,
     service: ChangeRequestService = Depends(get_change_request_service),
+    run_service: RunViewService = Depends(get_run_view_service),
     client: CodeCollectorClient = Depends(get_codecollector_client),
 ) -> dict:
     cr = service.get_change_request(cr_id)
@@ -174,6 +240,20 @@ def apply_last_run(
         )
     if not cr.last_workspace_id or not cr.last_run_id:
         raise ApiError("WORKSPACE_NOT_SELECTED", "У запроса нет последнего результата для применения.", status_code=409)
+    summary = run_service.summary(cr.last_run_id)
+    if summary.merge_ready is not True:
+        raise ApiError(
+            "RUN_NOT_READY_FOR_APPLY",
+            "Последний результат не готов к применению. Проверьте план применения и проверки запуска.",
+            status_code=409,
+            details={
+                "cr_id": cr_id,
+                "run_id": cr.last_run_id,
+                "status": summary.status,
+                "merge_ready": summary.merge_ready,
+                "verification_passed": summary.verification_passed,
+            },
+        )
     result = client.workspace_apply(cr.last_workspace_id)
     updated = service.mark_applied(cr_id, result)
     return {"change_request": updated.model_dump(mode="json"), "apply_result": result}
