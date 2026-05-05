@@ -67,9 +67,11 @@ function shortText(value, len = 130) {
   return text.length > len ? `${text.slice(0, len)}…` : text;
 }
 function badge(text, kind = '') { return `<span class="badge ${kind}">${escapeHtml(text || '—')}</span>`; }
-function statusBadge(value) {
+function statusBadge(value, kind = '') {
+  if (kind) return badge(String(value || '—'), kind);
   const text = String(value || '—');
   const low = text.toLowerCase();
+  if (low === 'generated_test_verification_failed') return badge('требуется проверка', 'warn');
   if (low.includes('верифицировано') && !low.includes('не ')) return badge(text, 'ok');
   if (low.includes('ok') || low.includes('ready') || low.includes('passed') || low === 'applied') return badge(text, 'ok');
   if (low.includes('fail') || low.includes('error') || low.includes('ошибка')) return badge(text, 'err');
@@ -82,7 +84,13 @@ function isBusyCr(cr) { return BUSY_CR_STATUSES.has(String(cr?.status || '').toL
 function canWorkWithCr(cr) { return Boolean(cr && !isFinalCr(cr) && !isBusyCr(cr)); }
 function canDeleteCr(cr) { return cr && !isFinalCr(cr) && !isBusyCr(cr); }
 function canApplyCr(cr) {
-  return Boolean(cr?.last_run_id && cr?.last_workspace_id && !isFinalCr(cr) && String(cr?.status || '') === 'ready_for_merge_review');
+  if (!cr?.last_run_id || !cr?.last_workspace_id || isFinalCr(cr)) return false;
+  const status = String(cr?.status || '').toLowerCase();
+  const generateResult = cr?.raw?.last_generate_result || {};
+  const summary = generateResult?.result_summary || {};
+  const mergePlan = generateResult?.pipeline_result?.merge_plan || generateResult?.merge_plan || {};
+  const mergeReady = summary.merge_ready === true || mergePlan.ready_for_manual_merge_review === true;
+  return mergeReady || status === 'ready_for_merge_review';
 }
 
 function linesFromTextarea(value) {
@@ -96,6 +104,112 @@ function findCrForRun(runId) {
 }
 function crHasPipelineState(cr) {
   return Boolean(cr?.session_id || cr?.recommended_target || cr?.selected_target || cr?.last_run_id || (cr?.run_ids || []).length);
+}
+function getAnalyzeResult(cr) {
+  return cr?.raw?.last_analyze_result || null;
+}
+function getAnalyzeSummary(cr) {
+  const analyze = getAnalyzeResult(cr);
+  return analyze?.result_summary || {};
+}
+function getRequestQuality(cr) {
+  const analyze = getAnalyzeResult(cr);
+  return analyze?.request_quality || {};
+}
+function getRequestQualityStatus(cr) {
+  return getAnalyzeSummary(cr)?.request_quality_status || getRequestQuality(cr)?.status || '';
+}
+function getTargetRecommendation(cr) {
+  return getAnalyzeResult(cr)?.target_recommendation || {};
+}
+function getAnalysisUsage(cr) {
+  return getAnalyzeResult(cr)?.analysis_usage || getAnalyzeSummary(cr)?.analysis_usage || null;
+}
+function getOperationSource(cr) {
+  return getAnalyzeResult(cr)?.operation_source || getAnalyzeSummary(cr)?.operation_source || '';
+}
+function getOperationConfidence(cr) {
+  return getAnalyzeResult(cr)?.operation_confidence ?? getAnalyzeSummary(cr)?.operation_confidence ?? null;
+}
+function getDetectedOperation(cr) {
+  const analyze = getAnalyzeResult(cr);
+  return analyze?.requested_operation || getTargetRecommendation(cr)?.recommended_operation || getAnalyzeSummary(cr)?.requested_operation || null;
+}
+function getEffectiveOperation(cr) {
+  if (cr?.requested_operation) return cr.requested_operation;
+  const detected = getDetectedOperation(cr);
+  const source = getOperationSource(cr);
+  if ((detected === 'replace_symbol' || detected === 'insert_after_symbol') && source !== 'fallback') return detected;
+  return null;
+}
+function getCurrentOperationSelection(cr) {
+  const form = $('edit-cr-form');
+  if (form && cr?.cr_id === state.selectedCrId) {
+    const value = new FormData(form).get('requested_operation');
+    return value ? String(value) : null;
+  }
+  return cr?.requested_operation || null;
+}
+function getRequiredOperationForAction(cr) {
+  const manual = getCurrentOperationSelection(cr) || cr?.requested_operation || null;
+  if (manual) return manual;
+  const detected = getDetectedOperation(cr);
+  const source = getOperationSource(cr);
+  if ((detected === 'replace_symbol' || detected === 'insert_after_symbol') && source !== 'fallback') return detected;
+  return null;
+}
+function getEffectiveOperationForAction(cr) {
+  return getRequiredOperationForAction(cr);
+}
+function isRequestInsufficient(cr) {
+  return getRequestQualityStatus(cr) === 'insufficient';
+}
+function isOperationFallback(cr) {
+  return getOperationSource(cr) === 'fallback' && !cr?.requested_operation;
+}
+function getRecommendedOrSelectedTarget(cr) {
+  return cr?.selected_target || cr?.recommended_target || getTargetRecommendation(cr)?.recommended_target || null;
+}
+function canSelectTargetForCr(cr) {
+  return Boolean(canWorkWithCr(cr) && cr?.session_id && !isRequestInsufficient(cr) && getRequiredOperationForAction(cr));
+}
+function canGenerateCr(cr) {
+  return Boolean(canWorkWithCr(cr) && cr?.session_id && !isRequestInsufficient(cr) && getRequiredOperationForAction(cr) && getRecommendedOrSelectedTarget(cr));
+}
+function qualityLabel(value) {
+  if (value === 'processable') return 'достаточный';
+  if (value === 'uncertain') return 'требует внимания';
+  if (value === 'insufficient') return 'недостаточный';
+  return value || '—';
+}
+function operationSourceLabel(value) {
+  const map = {
+    user: 'выбрана пользователем',
+    llm_search_plan: 'определена LLM на этапе плана поиска',
+    llm_rerank: 'уточнена LLM после просмотра кандидатов',
+    fallback: 'техническое значение по умолчанию',
+  };
+  return map[value] || value || '—';
+}
+function targetRoleLabel(value) {
+  if (value === 'target') return 'цель изменения';
+  if (value === 'anchor') return 'anchor для вставки';
+  if (value === 'unknown') return 'не определено';
+  return value || '—';
+}
+function formatConfidence(value) {
+  if (value == null || value === '') return '—';
+  const num = Number(value);
+  if (!Number.isFinite(num)) return String(value);
+  return String(Math.round(num * 100) / 100);
+}
+function renderWarningList(items) {
+  const list = Array.isArray(items) ? items : [];
+  if (!list.length) return '';
+  return `<div class="message warn-message"><b>Предупреждения:</b><ul>${list.map(item => {
+    if (typeof item === 'string') return `<li>${escapeHtml(item)}</li>`;
+    return `<li>${item.code ? `<b>${escapeHtml(item.code)}:</b> ` : ''}${escapeHtml(item.message || item.reason || JSON.stringify(item))}</li>`;
+  }).join('')}</ul></div>`;
 }
 
 async function init() {
@@ -325,7 +439,7 @@ function renderCreateCrForm() {
       <div class="form-row"><label>Название</label><input name="title" required placeholder="Введите название запроса вручную"></div>
       <div class="form-row"><label>Описание</label><textarea name="description" rows="4" required placeholder="Опишите изменение, которое нужно выполнить"></textarea></div>
       <div class="form-row"><label>Ограничения</label><textarea name="constraints" rows="2" placeholder="По одному ограничению на строку"></textarea></div>
-      <div class="form-row"><label>Операция</label><select name="requested_operation"><option value="replace_symbol">заменить существующий код</option><option value="insert_after_symbol">добавить после существующего кода</option></select></div>
+      <div class="form-row"><label>Операция</label><select name="requested_operation"><option value="">определить автоматически при анализе</option><option value="replace_symbol">заменить существующий код</option><option value="insert_after_symbol">добавить после существующего кода</option></select></div>
       <div class="action-row"><button class="btn" type="submit">Создать запрос</button></div>
     </form>
   `;
@@ -352,7 +466,7 @@ function bindCreateCrForm(requirement) {
       title,
       description,
       constraints: String(data.get('constraints') || '').split('\n').map(v => v.trim()).filter(Boolean),
-      requested_operation: data.get('requested_operation'),
+      requested_operation: data.get('requested_operation') || null,
     };
     const button = form.querySelector('button[type="submit"]');
     await withBusyButton(button, 'Создание...', async () => {
@@ -414,50 +528,56 @@ function renderSelectedCr() {
   const candidates = cr.raw?.last_analyze_result?.candidates || [];
   $('cr-detail').innerHTML = `
     <div class="detail-scroll">
-      <div class="card">
-        <h3 class="card-title">Запрос на изменение</h3>
-        <div class="kv-grid">
-          <div class="key">Код</div><div>${escapeHtml(cr.code || '—')}</div>
-          <div class="key">Технический ID</div><div>${escapeHtml(cr.cr_id)}</div>
-          <div class="key">Статус</div><div>${statusBadge(cr.status)}</div>
-          <div class="key">Проект</div><div>${escapeHtml(cr.project_id)}</div>
-          <div class="key">Требования</div><div>${escapeHtml((cr.requirement_ids || []).join(', ') || '—')}</div>
-          <div class="key">Операция</div><div>${escapeHtml(operationLabel(cr.requested_operation))}</div>
-          <div class="key">Сессия анализа</div><div>${escapeHtml(cr.session_id || '—')}</div>
-          <div class="key">Рекомендованное место</div><div>${escapeHtml(cr.recommended_target || '—')}</div>
-          <div class="key">Выбранное место</div><div>${escapeHtml(cr.selected_target || '—')}</div>
-          <div class="key">Последний запуск</div><div>${escapeHtml(cr.last_run_id || '—')}</div>
+      <div class="cr-summary-strip">
+        <div class="cr-summary-main">
+          <span class="cr-summary-code">${escapeHtml(cr.code || '—')}</span>
+          <span>${statusBadge(cr.status)}</span>
+          <span class="cr-summary-title">${escapeHtml(cr.title || 'Без названия')}</span>
+        </div>
+        <div class="cr-summary-meta">
+          <span>Тех. ID: <span class="mono-text">${escapeHtml(cr.cr_id)}</span></span>
+          ${cr.last_run_id ? `<span>Последний запуск: <button class="link-button" id="open-run-inline-btn">${escapeHtml(cr.last_run_id)}</button></span>` : '<span>Последний запуск: —</span>'}
+        </div>
+      </div>
+
+      <div class="cr-main-grid">
+        <div class="card cr-fields-card">
+          <h3 class="card-title">Поля запроса</h3>
+          ${renderCrEditForm(cr)}
+        </div>
+        <div class="cr-side-column">
+          <div class="card cr-side-card">
+            <h3 class="card-title">Связанные требования</h3>
+            ${renderCrRequirements(cr)}
+          </div>
+          <div class="card cr-side-card">
+            <h3 class="card-title">Запуски по запросу</h3>
+            ${renderCrRuns(cr)}
+          </div>
         </div>
       </div>
 
       <div class="card">
-        <h3 class="card-title">Поля запроса</h3>
-        ${renderCrEditForm(cr)}
-      </div>
-
-      <div class="card">
-        <h3 class="card-title">Связанные требования</h3>
-        ${renderCrRequirements(cr)}
-      </div>
-      <div class="card">
-        <h3 class="card-title">Запуски по запросу</h3>
-        ${renderCrRuns(cr)}
+        <h3 class="card-title">Анализ запроса</h3>
+        ${renderAnalyzeOverview(cr)}
       </div>
       <div class="card">
         <h3 class="card-title">Действия</h3>
         <div class="action-row">
-          <button class="btn" id="analyze-cr-btn" ${!canWorkWithCr(cr) ? 'disabled' : ''}>Выполнить анализ</button>
-          <button class="btn" id="run-cr-btn" ${!canWorkWithCr(cr) ? 'disabled' : ''}>Запустить обработку</button>
-          ${cr.last_run_id ? '<button class="btn" id="open-run-btn">Открыть последний результат</button>' : ''}
-          ${canApplyCr(cr) ? '<button class="btn" id="apply-cr-btn">Применить последний результат</button>' : ''}
+          <button class="btn" id="analyze-cr-btn" ${!canWorkWithCr(cr) ? 'disabled' : ''}>1. Выполнить анализ</button>
+          <button class="btn" id="run-cr-btn" ${!canGenerateCr(cr) ? 'disabled' : ''}>2. Запустить обработку</button>
+          ${cr.last_run_id ? '<button class="btn" id="open-run-btn">3. Открыть последний результат</button>' : ''}
+          ${canApplyCr(cr) ? '<button class="btn" id="apply-cr-btn">4. Применить последний результат</button>' : ''}
           ${canDeleteCr(cr) ? '<button class="btn danger" id="delete-cr-btn">Удалить запрос</button>' : ''}
         </div>
       </div>
       <div class="tabs">
         <button class="tab-btn active" data-tab="cr-candidates">Место изменения</button>
+        <button class="tab-btn" data-tab="cr-analysis-usage">Статистика</button>
         <button class="tab-btn" data-tab="cr-json">JSON</button>
       </div>
       <div id="cr-candidates" class="tab-panel active">${renderCandidates(candidates, cr)}</div>
+      <div id="cr-analysis-usage" class="tab-panel">${renderAnalyzeUsage(cr)}</div>
       <div id="cr-json" class="tab-panel">${jsonBlock(cr)}</div>
     </div>
   `;
@@ -467,6 +587,8 @@ function renderSelectedCr() {
   $('run-cr-btn').addEventListener('click', event => runCr(cr.cr_id, event.currentTarget));
   const openRun = $('open-run-btn');
   if (openRun) openRun.addEventListener('click', () => openRunView(cr.last_run_id));
+  const openRunInline = $('open-run-inline-btn');
+  if (openRunInline) openRunInline.addEventListener('click', () => openRunView(cr.last_run_id));
   const applyBtn = $('apply-cr-btn');
   if (applyBtn) applyBtn.addEventListener('click', event => applyLastRun(cr.cr_id, event.currentTarget));
   const deleteBtn = $('delete-cr-btn');
@@ -492,6 +614,7 @@ function renderCrEditForm(cr) {
       <div class="form-row"><label>Описание</label><textarea name="description" rows="4" required ${disabled ? 'disabled' : ''}>${escapeHtml(cr.description || '')}</textarea></div>
       <div class="form-row"><label>Ограничения</label><textarea name="constraints" rows="3" ${disabled ? 'disabled' : ''}>${escapeHtml(linesToTextarea(cr.constraints || []))}</textarea></div>
       <div class="form-row"><label>Операция</label><select name="requested_operation" ${disabled ? 'disabled' : ''}>
+        <option value="" ${!cr.requested_operation ? 'selected' : ''}>определить автоматически при анализе</option>
         <option value="replace_symbol" ${cr.requested_operation === 'replace_symbol' ? 'selected' : ''}>заменить существующий код</option>
         <option value="insert_after_symbol" ${cr.requested_operation === 'insert_after_symbol' ? 'selected' : ''}>добавить после существующего кода</option>
       </select></div>
@@ -508,6 +631,16 @@ function renderCrEditForm(cr) {
 function bindCrEditForm(cr) {
   const form = $('edit-cr-form');
   if (!form) return;
+  const operationSelect = form.querySelector('[name="requested_operation"]');
+  if (operationSelect) {
+    operationSelect.addEventListener('change', () => {
+      const value = operationSelect.value || null;
+      cr.requested_operation = value;
+      if (!cr.raw || typeof cr.raw !== 'object') cr.raw = {};
+      cr.raw.operation_selection_source = value ? 'user' : 'none';
+      renderSelectedCr();
+    });
+  }
   form.addEventListener('submit', async event => {
     event.preventDefault();
     const data = new FormData(form);
@@ -526,7 +659,7 @@ function bindCrEditForm(cr) {
       description,
       constraints: linesFromTextarea(data.get('constraints')),
       notes: linesFromTextarea(data.get('notes')),
-      requested_operation: data.get('requested_operation'),
+      requested_operation: data.get('requested_operation') || null,
     };
     const button = form.querySelector('button[type="submit"]');
     await withBusyButton(button, 'Сохранение...', async () => {
@@ -541,6 +674,150 @@ function bindCrEditForm(cr) {
       }
     });
   });
+}
+
+function renderAnalyzeOverview(cr) {
+  const analyze = getAnalyzeResult(cr);
+  if (!analyze) return '<div class="empty-state">Анализ еще не выполнялся.</div>';
+  return `
+    <div class="analysis-grid">
+      ${renderQualitySummary(cr)}
+      ${renderOperationSummary(cr)}
+      ${renderTargetRecommendationSummary(cr)}
+    </div>
+  `;
+}
+
+function renderQualitySummary(cr) {
+  const quality = getRequestQuality(cr);
+  const status = getRequestQualityStatus(cr);
+  const missing = Array.isArray(quality.missing_information) ? quality.missing_information : [];
+  const statusKind = status === 'insufficient' ? 'err' : status === 'uncertain' ? 'warn' : status === 'processable' ? 'ok' : '';
+  return `<div class="analysis-box">
+    <div class="analysis-title">Качество запроса</div>
+    <div>${badge(qualityLabel(status), statusKind)}</div>
+    ${quality.reason ? `<div class="analysis-text">${escapeHtml(quality.reason)}</div>` : ''}
+    ${missing.length ? `<div class="compact-list-title">Нужно уточнить</div><ul>${missing.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>` : ''}
+    ${status === 'insufficient' ? '<div class="message warn-message">Измените название, описание или ограничения и выполните анализ заново. Генерация заблокирована.</div>' : ''}
+  </div>`;
+}
+
+function renderOperationSummary(cr) {
+  const selectedOperation = cr.requested_operation;
+  const detected = getDetectedOperation(cr);
+  const source = getOperationSource(cr);
+  const confidence = getOperationConfidence(cr);
+  const analyze = getAnalyzeResult(cr) || {};
+  const reason = analyze.operation_reason || getTargetRecommendation(cr).operation_reason || '';
+  const reliable = Boolean(selectedOperation);
+  const operationSelectionSource = cr.raw?.operation_selection_source || '';
+  const sourceForDisplay = source === 'user' && operationSelectionSource !== 'user' ? '' : source;
+  const modeText = selectedOperation
+    ? (operationSelectionSource === 'analysis' ? 'автоматически' : 'выбрана вручную')
+    : 'не выбрана';
+  const recommendationText = detected ? operationLabel(detected) : '—';
+  return `<div class="analysis-box">
+    <div class="analysis-title">Операция</div>
+    <div class="kv-grid compact-kv mini-kv">
+      <div class="key">Режим</div><div>${escapeHtml(modeText)}</div>
+      ${selectedOperation ? `<div class="key">Выбор</div><div>${escapeHtml(operationLabel(selectedOperation))}</div>` : ''}
+      <div class="key">Рекомендация</div><div>${escapeHtml(recommendationText)} ${sourceForDisplay ? badge(operationSourceLabel(sourceForDisplay), sourceForDisplay === 'fallback' ? 'warn' : 'info') : ''}</div>
+      <div class="key">Уверенность</div><div>${escapeHtml(formatConfidence(confidence))}</div>
+    </div>
+    ${reason ? `<div class="analysis-text">${escapeHtml(reason)}</div>` : ''}
+    ${!reliable ? '<div class="message warn-message">Операция не выбрана. Перед запуском обработки выберите операцию.</div>' : ''}
+  </div>`;
+}
+
+function renderTargetRecommendationSummary(cr) {
+  const recommendation = getTargetRecommendation(cr);
+  const target = recommendation.recommended_target || cr.recommended_target;
+  const role = recommendation.target_role || '';
+  const confidence = recommendation.target_confidence ?? getAnalyzeSummary(cr).target_selection_confidence;
+  const manualReview = Boolean(recommendation.manual_review_required || getAnalyzeSummary(cr).manual_review_required);
+  const source = getAnalyzeSummary(cr).target_selection_source;
+  const post = recommendation.post_processing;
+  return `<div class="analysis-box">
+    <div class="analysis-title">Рекомендация места</div>
+    <div class="kv-grid compact-kv mini-kv">
+      <div class="key">Место</div><div class="mono-text">${escapeHtml(target || '—')}</div>
+      <div class="key">Роль</div><div>${badge(targetRoleLabel(role), role === 'anchor' ? 'blue' : role === 'target' ? 'ok' : 'warn')}</div>
+      <div class="key">Источник</div><div>${escapeHtml(source || '—')}</div>
+      <div class="key">Уверенность</div><div>${escapeHtml(formatConfidence(confidence))}</div>
+      <div class="key">Проверка</div><div>${manualReview ? statusBadge('требуется') : statusBadge('не требуется', 'ok')}</div>
+    </div>
+    ${recommendation.target_reason ? `<div class="analysis-text">${escapeHtml(recommendation.target_reason)}</div>` : ''}
+    ${post ? `<div class="message compact-message">Anchor скорректирован: ${escapeHtml(post.original_recommended_target || '—')} → ${escapeHtml(post.recommended_target || '—')}</div>` : ''}
+    ${renderWarningList(recommendation.warnings || getAnalyzeResult(cr)?.warnings)}
+  </div>`;
+}
+
+function renderAnalyzeUsage(cr) {
+  const usage = getAnalysisUsage(cr);
+  if (!usage) return '<div class="empty-state">Статистика анализа отсутствует.</div>';
+  const steps = usage.steps || {};
+  const rows = [
+    analyzeUsageRow('Всего', usage),
+    steps.search_plan ? analyzeUsageRow('План поиска', steps.search_plan) : '',
+    steps.candidate_rerank ? analyzeUsageRow('Ранжирование кандидатов', steps.candidate_rerank) : '',
+  ].filter(Boolean).join('');
+  return `<div class="stats-stack">
+    <div class="stats-title">LLM-вызовы</div>
+    <table class="table compact-usage-table"><thead><tr><th>Этап</th><th>Вызовы</th><th>Prompt</th><th>Output</th><th>Total</th><th>Символы prompt</th><th>Длительность</th></tr></thead><tbody>${rows}</tbody></table>
+    ${renderAnalyzeTimingTable(usage)}
+  </div>`;
+}
+
+function analyzeUsageRow(title, usage) {
+  const calls = title === 'Всего' ? usage.calls : 1;
+  return `<tr>
+    <td>${escapeHtml(title)}</td>
+    <td>${escapeHtml(calls ?? '—')}</td>
+    <td>${escapeHtml(usage.prompt_tokens ?? '—')}</td>
+    <td>${escapeHtml(usage.output_tokens ?? '—')}</td>
+    <td>${escapeHtml(usage.total_tokens ?? '—')}</td>
+    <td>${escapeHtml(usage.prompt_chars ?? '—')}</td>
+    <td>${usage.duration_sec != null ? `${escapeHtml(formatNumber(usage.duration_sec))} c` : '—'}</td>
+  </tr>`;
+}
+
+function renderAnalyzeTimingTable(usage) {
+  const timings = usage?.timings || {};
+  const steps = usage?.steps || {};
+  const rows = [];
+  const push = (key, title, comment = '') => {
+    if (timings[key] == null) return;
+    rows.push(timingRow(title, timings[key], comment));
+  };
+
+  push('search_plan_total_sec', 'План поиска: всего', 'LLM-вызов и служебная обработка search plan');
+  push('session_create_sec', 'Создание сессии', 'Запись состояния analyze-сессии');
+  push('recall_search_sec', 'Поиск кандидатов', 'Поиск по индексу и embedding-запросы');
+  push('candidate_rerank_total_sec', 'Ранжирование: всего', 'Подготовка candidate cards, prompt и LLM rerank');
+
+  const rerankTotal = Number(timings.candidate_rerank_total_sec);
+  const rerankLlm = Number(steps.candidate_rerank?.duration_sec);
+  if (Number.isFinite(rerankTotal) && Number.isFinite(rerankLlm)) {
+    const overhead = Math.max(0, rerankTotal - rerankLlm);
+    rows.push(timingRow('Подготовка rerank', overhead, 'candidate cards, context и prompt вокруг LLM rerank'));
+  }
+
+  push('target_resolution_sec', 'Определение места', 'Post-processing target или anchor');
+  push('api_candidates_sec', 'Кандидаты для API', 'Подготовка списка кандидатов для ответа');
+  push('context_summary_sec', 'Context summary', 'Сбор краткого контекста для рекомендованного места');
+  push('total_sec', 'Analyze: всего', 'Полная длительность analyze');
+
+  if (!rows.length) return '';
+  return `<div class="stats-title">Runtime-этапы analyze</div>
+    <table class="table compact-usage-table"><thead><tr><th>Этап</th><th>Время</th><th>Комментарий</th></tr></thead><tbody>${rows.join('')}</tbody></table>`;
+}
+
+function timingRow(title, seconds, comment = '') {
+  return `<tr>
+    <td>${escapeHtml(title)}</td>
+    <td>${seconds != null ? `${escapeHtml(formatNumber(seconds))} c` : '—'}</td>
+    <td>${escapeHtml(comment || '—')}</td>
+  </tr>`;
 }
 
 function renderCrRequirements(cr) {
@@ -575,24 +852,33 @@ function renderCandidates(candidates, cr) {
   if (!candidates.length) {
     return `${manualBlock}<div class="empty-state">Кандидаты появятся после выполнения анализа. Если анализ уже выполнен, место изменения можно указать вручную.</div>`;
   }
-  return `${manualBlock}<table class="table"><thead><tr><th>Место изменения</th><th>Оценка</th><th>Причины</th><th></th></tr></thead><tbody>${candidates.map(candidate => `
+  return `${manualBlock}<table class="table candidates-table"><thead><tr><th>Ранг</th><th>Место изменения</th><th>Тип</th><th>Оценка</th><th>LLM</th><th>Причины</th><th></th></tr></thead><tbody>${candidates.map(candidate => {
+    const llmBadge = candidate.llm_recommended ? badge('рекомендовано', 'ok') : candidate.ranked_by_llm ? badge(`LLM #${candidate.llm_rank || '—'}`, 'info') : badge('поиск');
+    const scoreText = [candidate.relevance_category, candidate.confidence != null ? `увер. ${formatConfidence(candidate.confidence)}` : '', candidate.score != null ? `score ${candidate.score}` : ''].filter(Boolean).join('<br>');
+    const reasons = [candidate.llm_reason ? `LLM: ${candidate.llm_reason}` : '', ...(candidate.reasons || []).slice(0, 4)].filter(Boolean);
+    return `
     <tr>
-      <td><b>${escapeHtml(candidate.name || '')}</b><br><span class="item-meta">${escapeHtml(candidate.qualname)}</span><br><span class="item-meta">${escapeHtml(candidate.file_path)}</span></td>
-      <td>${escapeHtml(candidate.score)}<br>${escapeHtml(candidate.relevance_category || '')}</td>
-      <td>${(candidate.reasons || []).slice(0, 4).map(escapeHtml).join('<br>')}</td>
-      <td><button class="btn small ${cr.selected_target === candidate.qualname ? 'selected' : ''}" data-select-target="${escapeHtml(candidate.qualname)}" ${!canWorkWithCr(cr) ? 'disabled' : ''}>Выбрать</button></td>
-    </tr>
-  `).join('')}</tbody></table>`;
+      <td>${candidate.llm_rank != null ? escapeHtml(candidate.llm_rank) : '—'}</td>
+      <td><b>${escapeHtml(candidate.name || '')}</b><br><span class="item-meta mono-text">${escapeHtml(candidate.qualname)}</span><br><span class="item-meta">${escapeHtml(candidate.file_path)}</span></td>
+      <td>${escapeHtml(candidate.kind || '—')}</td>
+      <td>${scoreText}</td>
+      <td>${llmBadge}</td>
+      <td>${reasons.map(escapeHtml).join('<br>')}</td>
+      <td><button class="btn small ${cr.selected_target === candidate.qualname ? 'selected' : ''}" data-select-target="${escapeHtml(candidate.qualname)}" ${!canSelectTargetForCr(cr) ? 'disabled' : ''}>Выбрать</button></td>
+    </tr>`;
+  }).join('')}</tbody></table>`;
 }
 
 function renderManualTargetBlock(cr) {
-  const disabled = !cr.session_id || isBusyCr(cr) || isFinalCr(cr);
-  const hint = cr.session_id
-    ? 'Укажите полное имя символа, если нужного варианта нет в списке.'
-    : 'Ручной выбор будет доступен после анализа запроса.';
+  const disabled = !canSelectTargetForCr(cr);
+  let hint = 'Укажите полное имя символа, если нужного варианта нет в списке.';
+  if (!cr.session_id) hint = 'Ручной выбор будет доступен после анализа запроса.';
+  else if (isRequestInsufficient(cr)) hint = 'Запрос недостаточно конкретный. Измените запрос и выполните анализ заново.';
+  else if (!getRequiredOperationForAction(cr)) hint = 'Перед ручным выбором укажите операцию.';
+  const role = getRequiredOperationForAction(cr) === 'insert_after_symbol' ? 'Anchor для вставки' : 'Место изменения';
   return `
     <div class="manual-target-panel">
-      <div class="form-row"><label>Место изменения</label><input id="manual-target-input" value="${escapeHtml(cr.selected_target || '')}" placeholder="package.module.Class.method" ${disabled ? 'disabled' : ''}></div>
+      <div class="form-row"><label>${escapeHtml(role)}</label><input id="manual-target-input" value="${escapeHtml(getRecommendedOrSelectedTarget(cr) || '')}" placeholder="package.module.Class.method" ${disabled ? 'disabled' : ''}></div>
       <div class="action-row">
         <button class="btn small" id="manual-target-btn" ${disabled ? 'disabled' : ''}>Выбрать вручную</button>
         <span class="message">${escapeHtml(hint)}</span>
@@ -616,27 +902,79 @@ async function refreshCrAfterAction({ reloadRuns = false } = {}) {
   }
   renderCrList();
   renderSelectedCr();
+  renderSelectedRequirementDetailIfVisible();
   if (reloadRuns) renderRuns();
+}
+
+function renderSelectedRequirementDetailIfVisible() {
+  if (!state.selectedRequirementId) return;
+  const requirement = state.requirements.find(item => item.id === state.selectedRequirementId);
+  if (requirement) renderRequirementDetail(requirement);
+}
+
+function upsertChangeRequest(updatedCr) {
+  if (!updatedCr || !updatedCr.cr_id) return;
+  const index = state.changeRequests.findIndex(item => item.cr_id === updatedCr.cr_id);
+  if (index >= 0) state.changeRequests[index] = updatedCr;
+  else state.changeRequests.unshift(updatedCr);
+  state.selectedCrId = updatedCr.cr_id;
 }
 
 async function analyzeCr(crId, button) {
   if (state.busy.has(crId)) return;
+  const cr = state.changeRequests.find(item => item.cr_id === crId);
   state.busy.add(crId);
+  const operation = getCurrentOperationSelection(cr);
+  if (cr) {
+    cr.requested_operation = operation;
+    clearLocalAnalyzeState(cr);
+    cr.status = 'analyzing';
+    renderCrList();
+    renderSelectedCr();
+  }
+  let response = null;
   try {
-    await withBusyButton(button, 'Анализ...', async () => {
-      await api.post(`/api/change-requests/${encodeURIComponent(crId)}/analyze`, {});
-    });
+    response = await api.post(`/api/change-requests/${encodeURIComponent(crId)}/analyze`, { operation });
   } finally {
     state.busy.delete(crId);
-    await refreshCrAfterAction();
   }
+  if (response?.change_request) {
+    upsertChangeRequest(response.change_request);
+    renderCrList();
+    renderSelectedCr();
+    renderSelectedRequirementDetailIfVisible();
+  }
+  await refreshCrAfterAction();
+}
+
+function clearLocalAnalyzeState(cr) {
+  cr.session_id = null;
+  cr.recommended_target = null;
+  cr.selected_target = null;
+  cr.last_run_id = null;
+  cr.last_workspace_id = null;
+  if (!cr.raw || typeof cr.raw !== 'object') cr.raw = {};
+  delete cr.raw.last_analyze_result;
+  delete cr.raw.last_select_result;
+  delete cr.raw.last_generate_result;
+  delete cr.raw.last_error;
 }
 async function selectTarget(crId, qualname, button) {
   if (state.busy.has(crId)) return;
+  const cr = state.changeRequests.find(item => item.cr_id === crId);
+  if (isRequestInsufficient(cr)) {
+    alert('Запрос недостаточно конкретный. Измените запрос и выполните анализ заново.');
+    return;
+  }
+  const operation = getEffectiveOperationForAction(cr);
+  if (!operation) {
+    alert('Операция не выбрана. Заполните поле «Операция» перед выбором места изменения.');
+    return;
+  }
   state.busy.add(crId);
   try {
     await withBusyButton(button, 'Выбор...', async () => {
-      await api.post(`/api/change-requests/${encodeURIComponent(crId)}/select-target`, { selected_qualname: qualname });
+      await api.post(`/api/change-requests/${encodeURIComponent(crId)}/select-target`, { selected_qualname: qualname, operation });
     });
   } finally {
     state.busy.delete(crId);
@@ -645,10 +983,19 @@ async function selectTarget(crId, qualname, button) {
 }
 async function runCr(crId, button) {
   if (state.busy.has(crId)) return;
+  const cr = state.changeRequests.find(item => item.cr_id === crId);
+  if (!canGenerateCr(cr)) {
+    if (isRequestInsufficient(cr)) alert('Генерация заблокирована: запрос недостаточно конкретный. Измените запрос и выполните анализ заново.');
+    else if (!getRequiredOperationForAction(cr)) alert('Генерация заблокирована: заполните поле «Операция».');
+    else if (!getRecommendedOrSelectedTarget(cr)) alert('Генерация заблокирована: не выбрано место изменения.');
+    return;
+  }
   state.busy.add(crId);
   try {
     await withBusyButton(button, 'Выполняется...', async () => {
-      await api.post(`/api/change-requests/${encodeURIComponent(crId)}/run`, {});
+      const result = await api.post(`/api/change-requests/${encodeURIComponent(crId)}/run`, { operation: getRequiredOperationForAction(cr) });
+      const blocked = result?.generate_result?.result_summary?.generation_blocked;
+      if (blocked) alert(result.generate_result.result_summary.message || 'Генерация заблокирована.');
     });
   } finally {
     state.busy.delete(crId);
@@ -658,13 +1005,29 @@ async function runCr(crId, button) {
 async function applyLastRun(crId, button) {
   if (!confirm('Применить последний результат в основной проект?')) return;
   await withBusyButton(button, 'Применение...', async () => {
-    await api.post(`/api/change-requests/${encodeURIComponent(crId)}/apply-last-run`, {});
+    const result = await api.post(`/api/change-requests/${encodeURIComponent(crId)}/apply-last-run`, {});
+    showApplyResultMessage(result?.apply_result);
     await Promise.all([loadChangeRequests(), loadRuns()]);
     renderCrList();
     renderSelectedCr();
+    renderSelectedRequirementDetailIfVisible();
     renderRuns();
   });
 }
+
+function showApplyResultMessage(result) {
+  if (!result || typeof result !== 'object') return;
+  const applied = Array.isArray(result.applied_files) ? result.applied_files : [];
+  const excluded = Array.isArray(result.excluded_files) ? result.excluded_files : [];
+  if (!applied.length && !excluded.length) return;
+  const lines = [];
+  if (applied.length) lines.push(`Применено:
+- ${applied.join('\n- ')}`);
+  if (excluded.length) lines.push(`Не применено:
+- ${excluded.join('\n- ')}`);
+  alert(lines.join('\n\n'));
+}
+
 async function deleteCr(crId, button) {
   if (!confirm('Удалить запрос на изменение?')) return;
   await withBusyButton(button, 'Удаление...', async () => {
@@ -739,24 +1102,26 @@ async function renderRunDetail(runId) {
     ]);
     root.innerHTML = `
       <div class="detail-scroll">
-        ${renderRunContext(runId)}
-        <div class="card"><h3 class="card-title">Результат запуска</h3>${renderRunSummary(summary)}</div>
+        <div class="run-main-grid">
+          <div class="card"><h3 class="card-title">Результат запуска</h3>${renderRunSummary(summary)}</div>
+          ${renderRunContext(runId)}
+        </div>
         <div class="tabs">
           <button class="tab-btn active" data-tab="run-steps">Шаги</button>
           <button class="tab-btn" data-tab="run-checks">Проверки</button>
           <button class="tab-btn" data-tab="run-apply">Применение</button>
-          <button class="tab-btn" data-tab="run-resources">Ресурсы</button>
+          <button class="tab-btn" data-tab="run-resources">Статистика</button>
           <button class="tab-btn" data-tab="run-diff">Diff</button>
           <button class="tab-btn" data-tab="run-code">Код</button>
           <button class="tab-btn" data-tab="run-test">Тест</button>
         </div>
         <div id="run-steps" class="tab-panel active">${renderSteps(steps)}</div>
-        <div id="run-checks" class="tab-panel">${renderChecks(checks)}</div>
+        <div id="run-checks" class="tab-panel">${renderChecks(checks, summary)}</div>
         <div id="run-apply" class="tab-panel">${renderApplyPlan(summary)}</div>
         <div id="run-resources" class="tab-panel">${renderResources(summary)}</div>
-        <div id="run-diff" class="tab-panel">${codeBlock(diff.unified_diff || '')}</div>
+        <div id="run-diff" class="tab-panel">${renderDiff(diff)}</div>
         <div id="run-code" class="tab-panel">${renderArtifact(code, 'code')}</div>
-        <div id="run-test" class="tab-panel">${renderArtifact(test, 'test')}</div>
+        <div id="run-test" class="tab-panel">${renderArtifact(test, 'test', summary)}</div>
       </div>
     `;
     bindTabs(root);
@@ -789,23 +1154,31 @@ function renderRunContext(runId) {
 
 function renderRunSummary(summary) {
   const mainIssue = summary.primary_issue ? renderPrimaryIssue(summary.primary_issue) : '';
+  const partialGeneratedTest = summary.status === 'generated_test_verification_failed' || summary.generated_test_failed === true || summary.generated_test_verification_failed === true;
+  const productionState = partialGeneratedTest && summary.production_failed === false ? statusBadge('готов к review', 'ok') : (summary.verification_passed ? statusBadge('без ошибок', 'ok') : statusBadge('требует проверки', 'warn'));
+  const generatedTestState = summary.generated_test_failed || summary.generated_test_verification_failed
+    ? statusBadge('не прошел проверку', 'warn')
+    : summary.has_generated_test ? statusBadge('сгенерирован', 'ok') : statusBadge('нет');
   return `<div class="compact-summary">
+    ${partialGeneratedTest ? `<div class="message warning-message"><b>Результат требует ручной проверки.</b> Основной код можно рассматривать для применения, но сгенерированный тест не прошел проверку и будет исключен из применения.</div>` : ''}
     <div class="kv-grid compact-kv">
       <div class="key">Статус</div><div>${statusBadge(summary.status)}</div>
       <div class="key">Операция</div><div>${escapeHtml(summary.final_operation || summary.requested_operation || '—')}</div>
       <div class="key">Место изменения</div><div class="mono-text">${escapeHtml(summary.selected_target || '—')}</div>
-      <div class="key">Проверки</div><div>${summary.verification_passed ? statusBadge('успешно', 'ok') : statusBadge('не пройдены', 'warn')}</div>
+      <div class="key">Production-код</div><div>${productionState}</div>
+      <div class="key">Generated test</div><div>${generatedTestState}</div>
       <div class="key">Repair</div><div>${summary.repair_used ? statusBadge('использовался', 'warn') : statusBadge('нет')}</div>
-      <div class="key">Тест</div><div>${summary.has_generated_test ? statusBadge('сгенерирован', 'ok') : statusBadge('нет')}</div>
       <div class="key">Применение</div><div>${summary.merge_ready ? statusBadge('готово', 'ok') : statusBadge('не готово', 'warn')}</div>
       <div class="key">Рабочая копия</div><div class="path-text">${escapeHtml(summary.workspace_path || '—')}</div>
     </div>
     ${mainIssue}
     <div class="summary-columns">
-      ${renderCompactList('Файлы', summary.changed_files)}
+      ${renderCompactList('Файлы к применению', summary.changed_files)}
+      ${renderCompactList('Исключены из применения', summary.excluded_files)}
       ${renderCompactList('Символы', summary.symbols_in_changed_files)}
       ${renderCompactList('Требования', summary.linked_requirements)}
       ${renderCompactList('Тестовые команды', summary.recommended_test_commands)}
+      ${renderCompactList('Проблемные generated tests', summary.generated_test_failed_files)}
     </div>
   </div>`;
 }
@@ -838,15 +1211,29 @@ function renderApplyPlan(summary) {
       <div class="key">Режим</div><div>${escapeHtml(summary.merge_mode || '—')}</div>
       <div class="key">Готов к применению</div><div>${summary.merge_ready ? statusBadge('да', 'ok') : statusBadge('нет', 'warn')}</div>
       <div class="key">Рабочая копия</div><div class="path-text">${escapeHtml(summary.workspace_path || '—')}</div>
+      <div class="key">Generated test</div><div>${summary.generated_test_merge_recommended === false ? statusBadge('исключен', 'warn') : summary.generated_test_failed ? statusBadge('ошибка', 'warn') : statusBadge('—')}</div>
     </div>
     <div class="summary-columns">
-      ${renderCompactList('Измененные файлы', summary.changed_files)}
+      ${renderCompactList('Файлы к применению', summary.changed_files)}
+      ${renderCompactList('Исключены из применения', summary.excluded_files)}
       ${renderCompactList('Символы', summary.symbols_in_changed_files)}
       ${renderCompactList('Связанные требования', summary.linked_requirements)}
       ${renderCompactList('Рекомендуемые проверки', summary.recommended_test_commands)}
     </div>
     ${lines.length ? `<div class="compact-list-block full-width"><div class="compact-list-title">Комментарий</div><ul>${lines.map(line => `<li>${escapeHtml(line)}</li>`).join('')}</ul></div>` : ''}
     ${(summary.warnings || []).length ? `<div class="compact-list-block full-width"><div class="compact-list-title">Предупреждения</div><ul>${summary.warnings.map(line => `<li>${escapeHtml(line)}</li>`).join('')}</ul></div>` : ''}
+  </div>`;
+}
+
+
+function renderDiff(diff) {
+  const excluded = Array.isArray(diff?.excluded_files) ? diff.excluded_files : [];
+  const changed = Array.isArray(diff?.changed_files) ? diff.changed_files : [];
+  return `<div class="compact-section">
+    ${renderCompactList('Файлы в diff', changed)}
+    ${excluded.length ? renderCompactList('Исключены из применения', excluded) : ''}
+    ${excluded.length ? '<div class="message compact-message">Diff для review фильтруется с учетом исключенных файлов, если backend передал excluded_files.</div>' : ''}
+    ${codeBlock(diff?.unified_diff || '')}
   </div>`;
 }
 
@@ -895,8 +1282,11 @@ function renderSteps(steps) {
     <tr><td>${escapeHtml(step.step_name)}</td><td>${statusBadge(step.status)}</td><td>${escapeHtml(step.duration_ms ?? '—')} мс</td><td>${escapeHtml(step.usage?.total_tokens ?? '—')}</td><td>${escapeHtml(step.summary || '')}</td></tr>
   `).join('')}</tbody></table>`;
 }
-function renderChecks(checks) {
-  return `<table class="table checks-table"><thead><tr><th>Проверка</th><th>Результат</th><th>Уровень</th><th>Проблемы</th></tr></thead><tbody>${(checks || []).map(check => `
+function renderChecks(checks, summary = null) {
+  const note = summary && (summary.status === 'generated_test_verification_failed' || summary.generated_test_failed === true)
+    ? '<div class="message warning-message">Ошибка относится к сгенерированному тесту. Основной production-код не классифицирован как ошибочный.</div>'
+    : '';
+  return note + `<table class="table checks-table"><thead><tr><th>Проверка</th><th>Результат</th><th>Уровень</th><th>Проблемы</th></tr></thead><tbody>${(checks || []).map(check => `
     <tr>
       <td>${escapeHtml(check.name)}</td>
       <td>${check.ok ? statusBadge('ok', 'ok') : statusBadge('ошибка', 'err')}</td>
@@ -942,10 +1332,13 @@ function renderIssue(issue) {
     ${meta.length ? `<div class="issue-meta">${meta.join('<br>')}</div>` : ''}
   </div>`;
 }
-function renderArtifact(artifact, kind) {
+function renderArtifact(artifact, kind, summary = null) {
   if (!artifact?.exists) return '<div class="empty-state">Артефакт отсутствует.</div>';
   const source = kind === 'test' ? artifact.artifact?.source_code : artifact.artifact?.code;
-  return `${source ? codeBlock(source) : ''}<details><summary>План и метрики</summary>${jsonBlock({ planner_result: artifact.planner_result, llm_usage: artifact.llm_usage, warnings: artifact.warnings })}</details>`;
+  const testNote = kind === 'test' && summary && (summary.generated_test_failed || summary.generated_test_verification_failed || summary.generated_test_merge_recommended === false)
+    ? `<div class="message warning-message">Сгенерированный тест создан, но не рекомендован к применению.${renderCompactList('Исключенные test-файлы', summary.generated_test_excluded_files || summary.excluded_files || [])}</div>`
+    : '';
+  return `${testNote}${source ? codeBlock(source) : ''}<details><summary>План и метрики</summary>${jsonBlock({ planner_result: artifact.planner_result, llm_usage: artifact.llm_usage, warnings: artifact.warnings })}</details>`;
 }
 
 function bindTabs(root) {

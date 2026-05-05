@@ -61,10 +61,12 @@ class CodeCollectorClient:
         description: str,
         constraints: list[str],
         notes: list[str],
-        operation: str,
+        operation: str | None = None,
         limit: int | None = None,
     ) -> Any:
-        command = ["sessions", "analyze", "--project-id", project_id, "--operation", operation]
+        command = ["sessions", "analyze", "--project-id", project_id]
+        if operation:
+            command.extend(["--operation", operation])
         if limit is not None:
             command.extend(["--limit", str(limit)])
 
@@ -76,8 +78,11 @@ class CodeCollectorClient:
             command.extend(["--change-request-file", str(request_path)])
             return self._run_json(command)
 
-    def select_target(self, *, session_id: str, selected_qualname: str) -> Any:
-        return self._run_json(["sessions", "select-target", "--session-id", session_id, "--selected-qualname", selected_qualname])
+    def select_target(self, *, session_id: str, selected_qualname: str, operation: str | None = None) -> Any:
+        command = ["sessions", "select-target", "--session-id", session_id, "--selected-qualname", selected_qualname]
+        if operation:
+            command.extend(["--operation", operation])
+        return self._run_json(command)
 
     def generate_session(
         self,

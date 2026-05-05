@@ -29,7 +29,7 @@ class ChangeRequestCreate(BaseModel):
     description: str = Field(min_length=1)
     constraints: list[str] = Field(default_factory=list)
     notes: list[str] = Field(default_factory=list)
-    requested_operation: PatchOperation = "replace_symbol"
+    requested_operation: PatchOperation | None = None
 
     @field_validator("title", "description")
     @classmethod
@@ -100,7 +100,7 @@ class ChangeRequestView(BaseModel):
     description: str
     constraints: list[str] = Field(default_factory=list)
     notes: list[str] = Field(default_factory=list)
-    requested_operation: PatchOperation = "replace_symbol"
+    requested_operation: PatchOperation | None = None
     status: str = "draft"
     session_id: str | None = None
     recommended_target: str | None = None
@@ -144,10 +144,12 @@ class ChangeRequestListResponse(BaseModel):
 
 class AnalyzeRequest(BaseModel):
     limit: int | None = None
+    operation: PatchOperation | None = None
 
 
 class SelectTargetRequest(BaseModel):
     selected_qualname: str
+    operation: PatchOperation | None = None
 
 
 class GenerateRequest(BaseModel):

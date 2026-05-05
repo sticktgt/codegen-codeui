@@ -85,7 +85,11 @@ class ChangeRequestService:
         if "code" in patch and patch.get("code") is not None:
             self._ensure_code_unique(str(patch["code"]), current_cr_id=cr_id)
 
-        data.update({key: value for key, value in patch.items() if value is not None})
+        
+        for key, value in patch.items():
+            if value is not None or key == "requested_operation":
+                data[key] = value
+        
         if "requirement_ids" in patch or "requirement_id" in patch:
             requirement_ids = self._normalize_requirement_ids(data.get("requirement_ids") or [], data.get("requirement_id"))
             data["requirement_ids"] = requirement_ids
@@ -134,7 +138,9 @@ class ChangeRequestService:
         view = self.get_change_request(cr_id)
         return list(view.run_ids)
 
-    def mark_processing(self, cr_id: str, status: str) -> ChangeRequestView:
+    _UNSET = object()
+
+    def mark_processing(self, cr_id: str, status: str, *, requested_operation: str | None | object = _UNSET) -> ChangeRequestView:
         if status not in PROCESSING_STATUSES:
             raise ApiError("INVALID_PROCESSING_STATUS", f"Unsupported processing status: {status}", status_code=500)
         view = self.get_change_request(cr_id)
@@ -152,6 +158,13 @@ class ChangeRequestService:
                 status_code=409,
                 details={"cr_id": cr_id, "status": view.status},
             )
+        if requested_operation is not self._UNSET:
+            view.requested_operation = str(requested_operation) if requested_operation else None
+            if view.raw is None or not isinstance(view.raw, dict):
+                view.raw = {}
+            view.raw["operation_selection_source"] = "user" if requested_operation else "none"
+        if status == "analyzing":
+            self._clear_analysis_state(view)
         view.status = status
         view.updated_at = datetime.now(timezone.utc)
         self._save(view)
@@ -187,21 +200,49 @@ class ChangeRequestService:
 
     def update_from_analyze_result(self, cr_id: str, result: dict[str, Any]) -> ChangeRequestView:
         view = self.get_change_request(cr_id)
-        view.status = str(result.get("result_summary", {}).get("status") or result.get("status") or "analyzed")
+        summary = result.get("result_summary") if isinstance(result.get("result_summary"), dict) else {}
+        quality = result.get("request_quality") if isinstance(result.get("request_quality"), dict) else {}
+        recommendation = result.get("target_recommendation") if isinstance(result.get("target_recommendation"), dict) else {}
+
+        result_status = str(summary.get("status") or result.get("status") or "analyzed")
+        quality_status = str(summary.get("request_quality_status") or quality.get("status") or "").strip()
+        if quality_status == "insufficient":
+            view.status = "analysis_insufficient"
+        elif result_status == "needs_user_decision":
+            view.status = "needs_user_decision"
+        else:
+            view.status = result_status
+
         view.session_id = str(result.get("session_id")) if result.get("session_id") else view.session_id
-        view.recommended_target = str(result.get("recommended_target")) if result.get("recommended_target") else view.recommended_target
+        recommended_target = result.get("recommended_target") or summary.get("recommended_target") or recommendation.get("recommended_target")
+        view.recommended_target = str(recommended_target) if recommended_target else None
+        view.selected_target = None
+
+        operation = result.get("requested_operation") or summary.get("requested_operation") or recommendation.get("recommended_operation")
+        operation_source = str(result.get("operation_source") or summary.get("operation_source") or "")
+        if operation in {"replace_symbol", "insert_after_symbol"} and operation_source != "fallback":
+            view.requested_operation = str(operation)
+            view.raw["operation_selection_source"] = "user" if operation_source == "user" else "analysis"
+        else:
+            view.requested_operation = None
+            view.raw["operation_selection_source"] = "fallback" if operation_source == "fallback" else "none"
+
         view.updated_at = datetime.now(timezone.utc)
         view.raw.pop("last_error", None)
+        view.raw.pop("last_select_result", None)
         view.raw["last_analyze_result"] = result
         self._save(view)
         return view
 
-    def update_from_select_result(self, cr_id: str, result: dict[str, Any]) -> ChangeRequestView:
+    def update_from_select_result(self, cr_id: str, result: dict[str, Any], *, operation: str | None = None) -> ChangeRequestView:
         view = self.get_change_request(cr_id)
         summary = result.get("result_summary", {}) if isinstance(result.get("result_summary"), dict) else {}
         view.status = str(summary.get("status") or result.get("status") or "target_selected")
         view.selected_target = str(result.get("selected_target") or summary.get("selected_target") or view.selected_target)
         view.recommended_target = str(summary.get("recommended_target") or view.recommended_target) if summary.get("recommended_target") else view.recommended_target
+        if operation:
+            view.requested_operation = operation  # operation confirmed for this target selection
+            view.raw["operation_selection_source"] = "user"
         view.updated_at = datetime.now(timezone.utc)
         view.raw.pop("last_error", None)
         view.raw["last_select_result"] = result
@@ -212,6 +253,13 @@ class ChangeRequestService:
         view = self.get_change_request(cr_id)
         session = result.get("session") if isinstance(result.get("session"), dict) else {}
         summary = result.get("result_summary") if isinstance(result.get("result_summary"), dict) else {}
+        if summary.get("generation_blocked"):
+            view.status = str(summary.get("status") or "generation_blocked")
+            view.raw["last_generate_result"] = result
+            view.updated_at = datetime.now(timezone.utc)
+            self._save(view)
+            return view
+
         view.status = str(session.get("status") or summary.get("status") or "generated")
         view.selected_target = str(result.get("selected_target") or summary.get("selected_target") or view.selected_target)
         run_id = result.get("run_id") or session.get("last_run_id") or view.last_run_id
@@ -225,6 +273,87 @@ class ChangeRequestService:
         view.raw["last_generate_result"] = result
         self._save(view)
         return view
+
+    def request_quality_status(self, view: ChangeRequestView) -> str | None:
+        analyze = self._last_analyze_result(view)
+        summary = analyze.get("result_summary") if isinstance(analyze.get("result_summary"), dict) else {}
+        quality = analyze.get("request_quality") if isinstance(analyze.get("request_quality"), dict) else {}
+        status = summary.get("request_quality_status") or quality.get("status")
+        return str(status) if status else None
+
+    def effective_operation(self, view: ChangeRequestView) -> str | None:
+        if view.requested_operation:
+            return view.requested_operation
+        analyze = self._last_analyze_result(view)
+        operation = analyze.get("requested_operation")
+        source = str(analyze.get("operation_source") or "")
+        if operation in {"replace_symbol", "insert_after_symbol"} and source != "fallback":
+            return str(operation)
+        return None
+
+    def generation_block_result(self, view: ChangeRequestView, *, operation_override: str | None = None) -> dict[str, Any] | None:
+        quality_status = self.request_quality_status(view)
+        analyze = self._last_analyze_result(view)
+        quality = analyze.get("request_quality") if isinstance(analyze.get("request_quality"), dict) else {}
+        if quality_status == "insufficient":
+            summary = {
+                "status": "needs_user_decision",
+                "generation_blocked": True,
+                "block_reason": "insufficient_request",
+                "message": "Запрос недостаточно конкретный. Измените название, описание или ограничения и выполните анализ заново.",
+                "request_quality_status": "insufficient",
+                "missing_information": list(quality.get("missing_information") or []),
+                "recommended_action": "rewrite_request_and_run_analyze_again",
+                "selected_target": view.selected_target,
+                "requested_operation": self.effective_operation(view),
+            }
+            return {"pipeline_result": None, "result_summary": summary}
+
+        effective_operation = operation_override or self.effective_operation(view)
+        if not effective_operation:
+            summary = {
+                "status": "needs_user_decision",
+                "generation_blocked": True,
+                "block_reason": "operation_not_selected",
+                "message": "Операция изменения не выбрана. Выберите операцию и выполните выбор места изменения.",
+                "request_quality_status": quality_status,
+                "missing_information": [],
+                "recommended_action": "select_operation_and_target",
+                "selected_target": view.selected_target,
+                "requested_operation": None,
+            }
+            return {"pipeline_result": None, "result_summary": summary}
+        return None
+
+
+    @staticmethod
+    def _clear_analysis_state(view: ChangeRequestView) -> None:
+        """Clear stale analysis/selection/current run before a new analyze call.
+
+        Historical run_ids are kept as CR history, but the last run/workspace is
+        cleared so an old result cannot be applied after a new analysis starts.
+        """
+        view.session_id = None
+        view.recommended_target = None
+        view.selected_target = None
+        view.last_run_id = None
+        view.last_workspace_id = None
+        raw = view.raw if isinstance(view.raw, dict) else {}
+        for key in (
+            "last_analyze_result",
+            "last_select_result",
+            "last_generate_result",
+            "last_error",
+        ):
+            raw.pop(key, None)
+        raw["analysis_state_cleared_at"] = datetime.now(timezone.utc).isoformat()
+        raw["analysis_state_clear_reason"] = "new_analyze_started"
+        view.raw = raw
+
+    @staticmethod
+    def _last_analyze_result(view: ChangeRequestView) -> dict[str, Any]:
+        value = view.raw.get("last_analyze_result") if isinstance(view.raw, dict) else None
+        return value if isinstance(value, dict) else {}
 
     @staticmethod
     def is_final(view: ChangeRequestView) -> bool:

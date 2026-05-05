@@ -1,18 +1,43 @@
-# AGENTS.md — контекст для агента Codex по проекту codeui
+# AGENTS.md — контекст для агента по проекту codeui
 
-## Назначение проекта
+## Назначение
 
-`codeui` — отдельный web-проект для управления workflow вокруг `codecollector` через FastAPI и компактный HTML/JS/CSS-интерфейс.
+`codeui` — отдельный web-проект для управления пользовательским workflow вокруг изменения кода через `codecollector`.
 
-Проект предназначен для аналитика или разработчика, который работает с требованиями, создает запросы на изменение кода, запускает анализ, выбирает место изменения, запускает обработку и принимает решение о применении результата в основной код.
+Проект предоставляет FastAPI API и компактный HTML/JS/CSS-интерфейс. Пользователь работает с проектами, требованиями, запросами на изменение, анализом, выбором места изменения, запуском обработки и применением результата.
 
-`codeui` не заменяет `codecollector` и `codegenerator`:
+`codeui` не реализует собственный pipeline изменения кода. Он вызывает `codecollector`, хранит собственные CR, связывает CR с требованиями и запусками, а также отображает compact view по run artifacts.
 
-- `codecollector` отвечает за техническую оркестрацию: проекты, сессии, анализ, выбор target, запуск pipeline, staging workspace, проверки и apply.
-- `codegenerator` отвечает за генерацию кода, тестов и repair по структурированному запросу.
-- `codeui` отвечает за UI/API-фасад, состояние пользовательского workflow, компактные представления результатов и связь CR с требованиями и запусками.
+## Границы ответственности
 
-## Расположение проектов
+`codeui` отвечает за:
+
+- web UI;
+- FastAPI endpoints;
+- пользовательское состояние UI;
+- подключение файла требований;
+- отображение дерева требований;
+- создание, редактирование и удаление CR;
+- хранение snapshot требований в CR;
+- связь CR с запусками;
+- вызовы `codecollector` через CLI-wrapper;
+- отображение результатов analyze;
+- отображение run artifacts в компактном виде;
+- apply последнего результата CR по решению пользователя.
+
+`codeui` не отвечает за:
+
+- индексирование проекта;
+- поиск символов внутри проекта;
+- построение context pack;
+- prompt assembly;
+- вызов LLM для генерации кода;
+- применение patch в staging workspace;
+- verification pipeline.
+
+Эти действия выполняются вне `codeui`. В `codeui` они видны через CLI-вызовы и JSON-артефакты.
+
+## Расположение
 
 Ожидаемая локальная структура:
 
@@ -22,59 +47,56 @@
 /home/stickt/llm/codeui
 ```
 
-`codeui/config.yaml` по умолчанию ожидает, что `codecollector` находится рядом:
+`codeui/config.yaml` по умолчанию ожидает соседний каталог `../codecollector`.
 
-```yaml
-codecollector:
-  root_dir: "../codecollector"
-```
-
-## Основной workflow UI
-
-Текущий пользовательский порядок работы:
+## Основной workflow
 
 1. Выбрать проект.
 2. Подключить JSON-файл требований.
 3. Выбрать требование.
-4. Создать CR, связанный с требованием.
+4. Создать CR.
 5. Выполнить анализ CR.
-6. Посмотреть кандидатов места изменения.
-7. Выбрать место изменения человеком из списка кандидатов или ввести qualname вручную.
+6. Посмотреть качество запроса, операцию, рекомендацию места изменения и кандидатов.
+7. Выбрать место изменения из кандидатов или ввести qualname вручную.
 8. Запустить обработку.
-9. Посмотреть результат: summary, шаги, проверки, diff, сгенерированный код, тест, raw JSON при необходимости.
-10. Принять решение о применении результата в основной проект.
+9. Посмотреть результат запуска.
+10. Применить последний результат к основному проекту отдельным решением пользователя.
 
-Финальный статус CR — только `applied`. Статус `ready_for_merge_review` не является финальным: из него можно редактировать CR и запускать pipeline заново.
+Финальный статус CR — только `applied`.
 
-## Важные правила разработки
+## Правила разработки
 
-1. По возможности менять только проект `codeui`.
-2. `codecollector` менять только если без этого невозможно сделать нормальный UI/API workflow.
-3. Совместимость с предыдущими версиями `codeui` не требуется.
-4. README.md должен описывать только текущее состояние проекта as-is. Не добавлять историю изменений, changelog, сравнения с предыдущими версиями или описания инкрементов.
-5. Все настройки, пути, команды, лимиты и константы должны задаваться через `config.yaml` или соответствующие поля конфигурации.
-6. Пользовательское состояние UI, например выбранный проект, путь к требованиям, выбранный CR, хранится в `data/ui_state.json`, а не в `config.yaml`.
-7. CR хранится как JSON в `data/change_requests/`.
-8. Тяжелые артефакты pipeline не копировать в `codeui`; читать их из `.runs` проекта `codecollector`.
-9. Не выводить весь `pipeline_run_*.json` как основной экран. Raw JSON допустим только как дополнительная опция.
-10. Обязательно сохранять обработку ошибок и логирование для действий, запускающих команды или читающих артефакты.
+- Документация пишется только на русском языке.
+- README.md описывает только текущее состояние проекта.
+- Не добавлять changelog, историю инкрементов и сравнения со старыми реализациями.
+- Не сохранять совместимость со старыми версиями, если это мешает текущей задаче.
+- Предпочитать простые изменения сложным перестройкам.
+- Не добавлять зависимости без явной необходимости.
+- Настройки, пути, лимиты и константы держать в `config.yaml` или в конфигурационных схемах, а не размазывать по коду.
+- Пользовательское состояние хранить в `data/ui_state.json`, а не в `config.yaml`.
+- CR хранить в `data/change_requests/*.json`.
+- Тяжелые run artifacts не копировать в `codeui`; читать их из `.runs` проекта `codecollector`.
+- Raw JSON не должен быть основным экраном, только дополнительной опцией.
+- Любые действия, вызывающие CLI или читающие артефакты, должны иметь обработку ошибок и логирование.
 
 ## UI-правила
 
-Интерфейс должен быть компактным и похожим на рабочее desktop/form-приложение.
+Интерфейс должен быть компактным рабочим приложением, похожим на desktop/form UI.
 
 Правила:
 
-- использовать русский язык для пользовательских названий;
+- использовать русский язык;
 - избегать больших презентационных заголовков;
 - не выравнивать рабочие значения по центру;
-- значения полей выравнивать по левому краю рядом с подписями;
-- raw JSON показывать только как дополнительный режим просмотра;
-- внутренние термины заменять на пользовательские, где это возможно:
+- значения показывать рядом с подписями, по левому краю;
+- не дублировать одни и те же поля в нескольких крупных блоках;
+- raw JSON показывать только как дополнительный режим;
+- внутренние термины по возможности переводить:
   - target → место изменения;
+  - anchor → anchor или место вставки, если это важно для смысла;
   - pipeline → обработка;
-  - workspace → рабочая копия / результат применения;
-  - merge/apply → применить результат.
+  - workspace → рабочая копия;
+  - apply → применить результат.
 
 ## Структура проекта
 
@@ -102,14 +124,17 @@ codeui/
     static/
 ```
 
-Ключевые backend-файлы:
+Основные backend-файлы:
 
 ```text
 codeui/main.py
+codeui/__main__.py
 codeui/config.py
-codeui/errors.py
 codeui/dependencies.py
+codeui/errors.py
+codeui/logger.py
 codeui/api/routes_*.py
+codeui/schemas/*.py
 codeui/services/codecollector_client.py
 codeui/services/command_runner.py
 codeui/services/change_request_service.py
@@ -120,7 +145,7 @@ codeui/services/ui_state_service.py
 codeui/services/json_io.py
 ```
 
-Ключевые frontend-файлы:
+Основные frontend-файлы:
 
 ```text
 codeui/static/index.html
@@ -128,36 +153,24 @@ codeui/static/styles.css
 codeui/static/app.js
 ```
 
-## Конфигурация
+## Конфигурация и состояние
 
-Основной файл настроек:
+Основная конфигурация находится в `config.yaml`.
 
-```text
-config.yaml
-```
-
-В нем задаются:
+В конфигурации задаются:
 
 - имя и версия приложения;
-- параметры HTTP-сервера;
+- параметры сервера;
 - логирование;
 - путь к `codecollector`;
-- относительные пути `.runs`, `.state`, `.workspaces` внутри `codecollector`;
-- директория хранения CR;
+- команда запуска `codecollector`;
+- timeout CLI-команд;
+- пути `.runs`, `.state`, `.workspaces` внутри `codecollector`;
 - дефолтный источник требований;
-- UI-настройки, например количество последних запусков.
+- директория хранения CR;
+- UI-настройки.
 
-Не переносить в `codeui` настройки моделей, prompt budget, reference library и verification pipeline. Они относятся к `codecollector`/`codegenerator`.
-
-## Состояние UI
-
-Текущее пользовательское состояние хранится в:
-
-```text
-data/ui_state.json
-```
-
-Обычно там находятся:
+Текущее состояние UI хранится в `data/ui_state.json`. Обычно там находятся:
 
 ```json
 {
@@ -170,36 +183,29 @@ data/ui_state.json
 
 ## Требования
 
-`codeui` читает требования из JSON-файла. Поддерживаемый формат — объект с массивом `requirements`:
+`codeui` читает требования из JSON-файла. Требования не редактируются.
 
-```json
-{
-  "requirements": [
-    {
-      "id": "LLM-A-000011",
-      "type": "BR",
-      "description": "...",
-      "parent_id": null,
-      "status": "новое",
-      "verification_status": "верифицировано"
-    }
-  ]
-}
-```
+Поддерживается объект с массивом `requirements` или список требований на верхнем уровне.
 
-Требования read-only. `codeui` их не редактирует.
+Иерархия строится по `parent_id`. Если `title` отсутствует, заголовок строится из начала `description`.
 
-Иерархия строится по `parent_id`. Если `title` отсутствует, отображаемый заголовок строится из начала `description`.
+При создании CR связанные требования сохраняются в `requirements_snapshot`, чтобы CR можно было открыть даже при недоступном или измененном файле требований.
 
-## Change Request / CR
+## Change Request
 
-CR — сущность `codeui`, которая связывает требования, выбранный проект, пользовательское описание изменения, сессию `codecollector` и запуски pipeline.
+CR — основная сущность `codeui`.
 
-CR хранится в:
+CR связывает:
 
-```text
-data/change_requests/*.json
-```
+- проект;
+- требования;
+- пользовательское описание изменения;
+- ручную или автоматически рекомендованную операцию;
+- сессию анализа;
+- выбранное место изменения;
+- список запусков;
+- последний run и workspace;
+- факт применения результата.
 
 Важные поля CR:
 
@@ -208,115 +214,156 @@ data/change_requests/*.json
   "cr_id": "cr-...",
   "code": "CR-000001",
   "project_id": "proj-...",
-  "requirement_id": "REQ-...",
   "requirement_ids": ["REQ-..."],
   "requirements_snapshot": [],
   "title": "...",
   "description": "...",
   "constraints": [],
-  "requested_operation": "replace_symbol",
+  "notes": [],
+  "requested_operation": null,
   "status": "draft",
   "session_id": null,
+  "recommended_target": null,
   "selected_target": null,
   "run_ids": [],
   "last_run_id": null,
-  "last_workspace_id": null
+  "last_workspace_id": null,
+  "applied_at": null,
+  "applied_run_id": null,
+  "raw": {}
 }
 ```
 
-`code` — короткий пользовательский идентификатор, например `CR-000001`. `cr_id` — технический идентификатор.
+`requested_operation` — ручной выбор пользователя. Если значение `null`, analyze вызывается без operation.
 
-`requirements_snapshot` нужен, чтобы CR можно было открыть даже если исходный файл требований больше недоступен.
+`raw.last_analyze_result` содержит последний ответ analyze и используется для отображения качества запроса, операции, рекомендации места изменения, кандидатов, предупреждений и статистики.
 
 ## Статусы CR
 
-Используемые статусы:
-
-- `draft` — запрос создан, анализ не выполнен или данные изменены;
-- `analyzed` — анализ выполнен, есть кандидаты места изменения;
+- `draft` — запрос создан или изменен;
+- `analyzed` — анализ выполнен;
+- `needs_user_decision` — требуется выбор пользователя;
+- `analysis_insufficient` — запрос недостаточно конкретный;
 - `target_selected` — место изменения выбрано;
-- `running` — выполняется действие или обработка;
-- `ready_for_merge_review` — результат готов к ручной оценке и применению;
+- `running` — выполняется действие;
+- `ready_for_merge_review` — результат готов к ручной проверке;
 - `verification_failed` — проверки не прошли;
-- `generated_test_verification_failed` — основной код прошел проверки, но проблема в generated test;
+- `generated_test_verification_failed` — проблема только в generated test;
 - `failed` — ошибка выполнения;
 - `applied` — результат применен к основному проекту.
 
-Только `applied` считается финальным статусом. Для `applied` запрещены analyze, select target, run, edit, delete и repeat apply.
+Только `applied` является финальным статусом. Для `applied` запрещены edit, delete, analyze, select target, run и repeat apply.
 
-## Связь CR с запусками
+`ready_for_merge_review` не финальный. Из него можно изменить CR и запустить обработку заново.
 
-CR содержит `run_ids` и `last_run_id`.
+## Analyze contract
 
-Экран CR показывает только запуски, связанные с выбранным CR. Экран всех запусков показывает последние N запусков и может загрузить конкретный run напрямую при переходе из CR.
+Analyze может выполняться без operation. В этом случае operation определяет `codecollector`.
 
-Применять результат можно только для последнего запуска CR и только если CR не `applied`.
+Ключевые поля analyze:
 
-## Интеграция с codecollector
-
-`codeui` вызывает `codecollector` через CLI-wrapper в `codecollector_client.py` и `command_runner.py`.
-
-Основные команды:
-
-```bash
-python -m codecollector projects list
-python -m codecollector projects register ...
-python -m codecollector sessions analyze ...
-python -m codecollector sessions select-target ...
-python -m codecollector sessions generate ...
-python -m codecollector workspaces apply ...
+```json
+{
+  "requested_operation": "replace_symbol",
+  "operation_source": "llm_search_plan",
+  "operation_confidence": 0.6,
+  "operation_reason": "...",
+  "request_quality": {
+    "status": "processable",
+    "reason": "...",
+    "missing_information": []
+  },
+  "target_recommendation": {
+    "recommended_target": "...",
+    "target_role": "target",
+    "target_confidence": 0.95,
+    "target_reason": "...",
+    "manual_review_required": false,
+    "warnings": []
+  },
+  "analysis_usage": {
+    "calls": 2,
+    "prompt_tokens": 5006,
+    "output_tokens": 874,
+    "total_tokens": 5880,
+    "prompt_chars": 19496,
+    "duration_sec": 24.82
+  },
+  "result_summary": {
+    "status": "analyzed",
+    "request_quality_status": "processable",
+    "manual_review_required": false
+  }
+}
 ```
 
-CLI-команды должны логироваться без больших payload и без секретов.
+`request_quality.status`:
+
+- `processable` — можно продолжать workflow;
+- `uncertain` — можно продолжать с предупреждением;
+- `insufficient` — нельзя запускать обработку, нужно изменить CR и выполнить analyze заново.
+
+`operation_source`:
+
+- `user` — операция выбрана пользователем;
+- `llm_search_plan` — операция выбрана LLM на этапе плана поиска;
+- `llm_rerank` — операция уточнена LLM после кандидатов;
+- `fallback` — надежной операции нет, нужен ручной выбор.
+
+Если `operation_source = fallback`, UI не должен считать operation надежно выбранной.
+
+Для `insert_after_symbol` поле `target_role = anchor` означает, что выбранный symbol является местом, после которого будет вставлен новый код.
 
 ## Run artifacts
 
-`codeui` читает результаты из `.runs` проекта `codecollector`:
+Run artifacts читаются из `.runs` проекта `codecollector`.
+
+Важные файлы:
 
 ```text
-codecollector/.runs/pipeline-.../
-  pipeline_run_*.json
-  generation_request.json
-  generation_result.json
-  generation_test_request.json
-  generation_test_result.json
-  repair_request.json
-  repair_result.json
+pipeline_run_*.json
+generation_request.json
+generation_result.json
+generation_test_request.json
+generation_test_result.json
+repair_request.json
+repair_result.json
 ```
 
-Основной UI должен показывать компактные view-models:
+Основной UI показывает compact view:
 
 - результат;
-- шаги с таймингами и токенами;
-- проверки и проблемы;
+- план применения;
+- шаги;
+- проверки;
+- статистика;
 - diff;
-- сгенерированный код;
-- сгенерированный тест;
-- raw JSON как дополнительная опция.
+- код;
+- тест;
+- JSON как дополнительная опция.
 
 ## Отображение ошибок проверок
 
-В `verification_report.blocks[].issues` элементы могут быть объектами, а не строками. Нельзя выводить их напрямую через `join`, иначе появится `[object Object]`.
+`verification_report.blocks[].issues` может содержать объекты.
 
-Для issue показывать:
+Нельзя выводить объект напрямую в DOM. Нужно форматировать поля:
 
 - `code`;
 - `severity`;
 - `message`;
 - `file_path`;
-- `symbol`, если есть.
+- `symbol`;
+- `details` в раскрываемом блоке.
 
-`details` показывать в раскрываемом блоке.
+## API-группы
 
-## API
-
-Основные группы API:
+Основные группы endpoint-ов:
 
 ```text
 /api/health
 /api/settings
-/api/projects
 /api/ui-state
+/api/projects
 /api/requirements
 /api/change-requests
 /api/sessions
@@ -324,7 +371,16 @@ codecollector/.runs/pipeline-.../
 /api/workspaces
 ```
 
-При ошибках использовать единый формат:
+Ключевые action endpoint-ы:
+
+```text
+POST /api/change-requests/{cr_id}/analyze
+POST /api/change-requests/{cr_id}/select-target
+POST /api/change-requests/{cr_id}/run
+POST /api/change-requests/{cr_id}/apply-last-run
+```
+
+Ошибки возвращаются в формате:
 
 ```json
 {
@@ -336,22 +392,40 @@ codecollector/.runs/pipeline-.../
 }
 ```
 
+## Интеграция с codecollector
+
+Вызовы `codecollector` выполняются через `CodecollectorClient` и `CommandRunner`.
+
+Команды:
+
+```bash
+python -m codecollector projects list
+python -m codecollector projects register ...
+python -m codecollector sessions analyze ...
+python -m codecollector sessions select-target ...
+python -m codecollector sessions generate ...
+python -m codecollector workspaces apply ...
+```
+
+CLI-вызовы должны логироваться с cwd, command, duration, returncode и размерами stdout/stderr. Не логировать большие payload целиком.
+
 ## Логирование и ошибки
 
 Логировать:
 
-- запуск приложения;
+- старт приложения;
 - чтение конфигурации;
-- вызовы CLI-команд;
-- длительность команд;
+- вызовы CLI;
+- длительность CLI-команд;
 - return code;
-- ошибки чтения/записи JSON;
-- ошибки чтения run artifacts;
-- apply workspace.
+- ошибки JSON I/O;
+- создание, изменение и удаление CR;
+- analyze, select-target, run, apply;
+- ошибки чтения run artifacts.
 
-Не логировать целиком большие JSON, diff, исходный код, prompt или raw output. Вместо этого логировать размеры, пути и короткие summary.
+При ошибках API использовать единый формат из `errors.py`.
 
-## Команды разработки
+## Команды проверки
 
 Запуск:
 
@@ -363,23 +437,24 @@ pip install -e .
 python -m codeui
 ```
 
-Проверки Python-синтаксиса:
+Проверка Python:
 
 ```bash
 python -m compileall codeui
 ```
 
-Проверка JavaScript-синтаксиса:
+Проверка JavaScript:
 
 ```bash
 node --check codeui/static/app.js
 ```
 
-## Ограничения текущего состояния
+## Ограничения
 
 - Аутентификации и авторизации нет.
-- Требования только читаются из JSON-файла.
+- Требования read-only и подключаются из JSON.
 - CR хранятся в JSON-файлах.
-- Pipeline вызывается через CLI `codecollector`.
-- Основной экран показывает компактные представления run artifacts, не полный `pipeline_run_*.json`.
-- `codeui` не управляет настройками моделей, prompt budget и verification pipeline.
+- UI-состояние хранится в JSON-файле.
+- Pipeline выполняется в `codecollector`.
+- Run artifacts остаются в `.runs` проекта `codecollector`.
+- Настройки моделей, prompt budget, reference library и verification pipeline не управляются из `codeui`.
