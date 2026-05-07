@@ -29,6 +29,7 @@ class RunViewService:
                         status=summary.status,
                         selected_target=summary.selected_target,
                         changed_files=summary.changed_files,
+                        excluded_files=summary.excluded_files,
                         verification_passed=summary.verification_passed,
                         merge_ready=summary.merge_ready,
                         created_at=self._created_at_from_run_id(run_id),
@@ -49,6 +50,7 @@ class RunViewService:
             status=summary.status,
             selected_target=summary.selected_target,
             changed_files=summary.changed_files,
+            excluded_files=summary.excluded_files,
             verification_passed=summary.verification_passed,
             merge_ready=summary.merge_ready,
             created_at=self._created_at_from_run_id(run_id),
@@ -61,23 +63,78 @@ class RunViewService:
         merge_plan = self._dict(payload.get("merge_plan"))
         verification = self._dict(payload.get("verification_report"))
         generated_test_apply = self._dict(payload.get("generated_test_apply"))
+        verification_summary = self._dict(verification.get("summary"))
+        result_summary = self._dict(payload.get("result_summary"))
+
+        excluded_files = self._unique_list(
+            self._list(result_summary.get("excluded_files"))
+            + self._list(execution.get("excluded_files"))
+            + self._list(merge_plan.get("excluded_files"))
+            + self._list(generated_test_apply.get("excluded_files"))
+            + self._list(verification_summary.get("generated_test_excluded_files"))
+        )
+        changed_files = self._unique_list(
+            self._list(result_summary.get("changed_files"))
+            or self._list(execution.get("changed_files"))
+            or self._list(merge_plan.get("changed_files"))
+        )
+        if excluded_files:
+            changed_files = [item for item in changed_files if not self._matches_any_path(item, excluded_files)]
+        applied_files = self._unique_list(self._list(result_summary.get("applied_files")) or changed_files)
+
+        # Для review/apply главным источником считается merge_plan/result_summary.
+        # execution_summary.verification_passed может быть false при generated_test_verification_failed,
+        # но merge_plan.ready_for_manual_merge_review=true означает, что production-код можно рассматривать
+        # для применения с исключением проблемного generated test.
+        merge_ready = (
+            result_summary.get("merge_ready")
+            if "merge_ready" in result_summary
+            else merge_plan.get("ready_for_manual_merge_review")
+            if "ready_for_manual_merge_review" in merge_plan
+            else execution.get("merge_ready")
+        )
+
+        generation_result = self._artifacts.read_optional_json(run_id, "generation_result.json") or {}
+        code_artifact = self._dict(generation_result.get("code_artifact"))
+        import_changes = self._list(
+            result_summary.get("import_changes")
+            or execution.get("import_changes")
+            or self._dict(payload.get("apply_result")).get("import_changes")
+            or code_artifact.get("import_changes")
+        )
+        insert_scope = (
+            result_summary.get("insert_scope")
+            or execution.get("insert_scope")
+            or payload.get("insert_scope")
+            or code_artifact.get("insert_scope")
+        )
 
         return RunSummaryView(
             run_id=str(payload.get("run_id") or run_id),
             run_label=payload.get("run_label"),
-            status=execution.get("status") or verification.get("verdict") or self._status_from_steps(payload),
-            selected_target=execution.get("selected_target") or payload.get("selected_target"),
-            requested_operation=execution.get("requested_operation") or payload.get("requested_operation"),
-            final_operation=execution.get("final_operation") or execution.get("requested_operation") or payload.get("requested_operation"),
-            changed_files=self._list(execution.get("changed_files") or merge_plan.get("changed_files")),
+            status=execution.get("status") or result_summary.get("status") or verification.get("verdict") or self._status_from_steps(payload),
+            selected_target=execution.get("selected_target") or result_summary.get("selected_target") or payload.get("selected_target"),
+            requested_operation=execution.get("requested_operation") or result_summary.get("requested_operation") or payload.get("requested_operation"),
+            final_operation=execution.get("final_operation") or execution.get("requested_operation") or result_summary.get("requested_operation") or payload.get("requested_operation"),
+            insert_scope=insert_scope,
+            import_changes=import_changes,
+            changed_files=changed_files,
+            excluded_files=excluded_files,
+            applied_files=applied_files,
             symbols_in_changed_files=self._list(execution.get("symbols_in_changed_files") or merge_plan.get("symbols_in_changed_files")),
             workspace_path=execution.get("workspace_path") or merge_plan.get("workspace_path"),
             verification_passed=execution.get("verification_passed") if "verification_passed" in execution else verification.get("passed"),
-            has_generated_test=bool(execution.get("has_generated_test") or generated_test_apply.get("count")),
-            generated_test_files=self._list(execution.get("generated_test_files") or generated_test_apply.get("applied_tests")),
+            has_generated_test=bool(execution.get("has_generated_test") or generated_test_apply.get("count") or generated_test_apply.get("applied_tests")),
+            generated_test_files=self._unique_list(self._list(execution.get("generated_test_files")) + self._list(generated_test_apply.get("applied_tests"))),
+            generated_test_merge_recommended=generated_test_apply.get("merge_recommended") if "merge_recommended" in generated_test_apply else None,
+            generated_test_verification_failed=generated_test_apply.get("verification_failed") if "verification_failed" in generated_test_apply else None,
+            generated_test_failed_files=self._unique_list(self._list(verification_summary.get("generated_test_failed_files"))),
+            generated_test_excluded_files=self._unique_list(self._list(verification_summary.get("generated_test_excluded_files")) + self._list(generated_test_apply.get("excluded_files"))),
+            production_failed=verification_summary.get("production_failed") if "production_failed" in verification_summary else None,
+            generated_test_failed=verification_summary.get("generated_test_failed") if "generated_test_failed" in verification_summary else None,
             repair_used=bool(execution.get("repair_used") or self._dict(payload.get("repair_generation"))),
             merge_mode=execution.get("merge_mode") or merge_plan.get("mode"),
-            merge_ready=execution.get("merge_ready") if "merge_ready" in execution else merge_plan.get("ready_for_manual_merge_review"),
+            merge_ready=merge_ready,
             linked_requirements=self._list(execution.get("linked_requirements") or merge_plan.get("linked_requirements")),
             recommended_tests=self._list(execution.get("recommended_tests") or merge_plan.get("recommended_tests")),
             recommended_test_commands=self._list(execution.get("recommended_test_commands") or merge_plan.get("recommended_test_commands")),
@@ -139,7 +196,10 @@ class RunViewService:
         payload = self._artifacts.read_pipeline_run(run_id)
         apply_result = self._dict(payload.get("apply_result"))
         diff = self._dict(apply_result.get("diff"))
-        return DiffView(changed_files=self._list(diff.get("changed_files")), unified_diff=str(diff.get("unified_diff") or ""))
+        summary = self.summary(run_id)
+        unified_diff = self._filter_unified_diff(str(diff.get("unified_diff") or ""), summary.excluded_files)
+        changed_files = summary.changed_files or self._list(diff.get("changed_files"))
+        return DiffView(changed_files=changed_files, excluded_files=summary.excluded_files, unified_diff=unified_diff)
 
     def code_artifact(self, run_id: str) -> ArtifactView:
         payload = self._artifacts.read_optional_json(run_id, "generation_result.json")
@@ -257,6 +317,54 @@ class RunViewService:
     @staticmethod
     def _list(value: Any) -> list[Any]:
         return value if isinstance(value, list) else []
+
+
+    @classmethod
+    def _unique_list(cls, values: list[Any]) -> list[str]:
+        result: list[str] = []
+        seen: set[str] = set()
+        for value in values:
+            if value is None:
+                continue
+            text = str(value)
+            if text and text not in seen:
+                seen.add(text)
+                result.append(text)
+        return result
+
+    @classmethod
+    def _matches_any_path(cls, path: str, candidates: list[str]) -> bool:
+        return any(cls._same_path(path, candidate) for candidate in candidates)
+
+    @staticmethod
+    def _same_path(left: str, right: str) -> bool:
+        left_norm = str(left).replace("\\", "/")
+        right_norm = str(right).replace("\\", "/")
+        return left_norm == right_norm or left_norm.endswith("/" + right_norm) or right_norm.endswith("/" + left_norm)
+
+    @classmethod
+    def _filter_unified_diff(cls, unified_diff: str, excluded_files: list[str]) -> str:
+        if not unified_diff or not excluded_files:
+            return unified_diff
+        result: list[str] = []
+        current: list[str] = []
+        current_file: str | None = None
+
+        def flush() -> None:
+            nonlocal current, current_file
+            if current and not (current_file and cls._matches_any_path(current_file, excluded_files)):
+                result.extend(current)
+            current = []
+            current_file = None
+
+        for line in unified_diff.splitlines(keepends=True):
+            if line.startswith("--- ") and current:
+                flush()
+            current.append(line)
+            if line.startswith("+++ "):
+                current_file = line[4:].strip()
+        flush()
+        return "".join(result)
 
     @staticmethod
     def _created_at_from_run_id(run_id: str) -> str | None:

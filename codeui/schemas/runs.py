@@ -11,6 +11,7 @@ class RunListItem(BaseModel):
     status: str | None = None
     selected_target: str | None = None
     changed_files: list[str] = Field(default_factory=list)
+    excluded_files: list[str] = Field(default_factory=list)
     verification_passed: bool | None = None
     merge_ready: bool | None = None
     created_at: str | None = None
@@ -59,12 +60,22 @@ class RunSummaryView(BaseModel):
     selected_target: str | None = None
     requested_operation: str | None = None
     final_operation: str | None = None
+    insert_scope: str | None = None
+    import_changes: list[Any] = Field(default_factory=list)
     changed_files: list[str] = Field(default_factory=list)
+    excluded_files: list[str] = Field(default_factory=list)
+    applied_files: list[str] = Field(default_factory=list)
     symbols_in_changed_files: list[str] = Field(default_factory=list)
     workspace_path: str | None = None
     verification_passed: bool | None = None
     has_generated_test: bool = False
     generated_test_files: list[str] = Field(default_factory=list)
+    generated_test_merge_recommended: bool | None = None
+    generated_test_verification_failed: bool | None = None
+    generated_test_failed_files: list[str] = Field(default_factory=list)
+    generated_test_excluded_files: list[str] = Field(default_factory=list)
+    production_failed: bool | None = None
+    generated_test_failed: bool | None = None
     repair_used: bool = False
     merge_mode: str | None = None
     merge_ready: bool | None = None
@@ -82,6 +93,7 @@ class RunSummaryView(BaseModel):
 
 class DiffView(BaseModel):
     changed_files: list[str] = Field(default_factory=list)
+    excluded_files: list[str] = Field(default_factory=list)
     unified_diff: str = ""
 
 

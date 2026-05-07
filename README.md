@@ -1,56 +1,51 @@
 # codeui
 
-`codeui` — web-интерфейс и FastAPI-фасад для управляемой работы с запросами на изменение кода через `codecollector`.
+`codeui` — веб-интерфейс и FastAPI-фасад для управляемой работы с `codecollector`.
 
-Приложение предназначено для рабочего сценария, в котором пользователь выбирает проект, подключает файл требований, создает запрос на изменение, выполняет анализ, выбирает место изменения, запускает обработку, просматривает результат и принимает решение о применении изменений к основному проекту.
+Приложение предназначено для рабочего сценария, в котором пользователь выбирает проект, подключает файл требований, создает запрос на изменение кода, выполняет анализ, выбирает место изменения, запускает обработку, просматривает результат и принимает решение о применении изменений к основному проекту.
 
-`codeui` не реализует собственный pipeline изменения кода. Он управляет пользовательским workflow, хранит запросы на изменение, вызывает `codecollector` через CLI и отображает компактные представления JSON-артефактов запусков.
+`codeui` не выполняет генерацию и не изменяет код напрямую. Технический pipeline выполняет `codecollector`; `codeui` хранит пользовательские запросы, вызывает `codecollector` через CLI, отображает компактные представления JSON-артефактов и помогает человеку принять решение.
 
 ## Основной сценарий работы
 
-1. Пользователь выбирает проект из списка проектов, зарегистрированных в `codecollector`, или регистрирует новый проект.
-2. Пользователь подключает JSON-файл требований.
-3. Пользователь выбирает требование в иерархическом списке.
-4. Пользователь создает запрос на изменение, связанный с выбранным требованием.
-5. Пользователь выполняет анализ запроса.
-6. Приложение показывает качество запроса, рекомендованную операцию, рекомендацию места изменения и кандидатов.
-7. Пользователь выбирает место изменения из кандидатов или вводит qualname вручную.
-8. Пользователь запускает обработку.
-9. Приложение показывает результат запуска: summary, шаги, проверки, статистику, план применения, diff, сгенерированный код и тест.
-10. Пользователь принимает отдельное решение о применении последнего результата к основному проекту.
+1. Выбрать проект.
+2. Подключить JSON-файл требований.
+3. Выбрать требование.
+4. Создать запрос на изменение.
+5. Выполнить анализ запроса.
+6. Проверить качество запроса, операцию, область вставки и рекомендацию места изменения.
+7. Выбрать место изменения из кандидатов или ввести его вручную.
+8. Запустить обработку.
+9. Просмотреть результат, шаги, проверки, diff, сгенерированный код, тест и статистику.
+10. Применить результат к основному проекту отдельным решением пользователя.
 
 ## Текущий функционал
 
-`codeui` поддерживает:
-
-- выбор активного проекта из проектов `codecollector`;
-- регистрацию нового проекта через `codecollector`;
-- сохранение текущего UI-состояния в JSON-файле;
-- подключение JSON-файла требований;
-- отображение требований деревом по `parent_id`;
-- просмотр карточки выбранного требования;
-- создание запроса на изменение, связанного с одним или несколькими требованиями;
-- сохранение snapshot требований внутри запроса;
-- короткий пользовательский код запроса вида `CR-000001`;
-- редактирование запроса до финального применения результата;
-- удаление запроса до финального применения результата;
-- анализ запроса без обязательного ручного выбора операции;
-- отображение качества запроса и недостающей информации;
-- отображение рекомендованной операции с источником, уверенностью и причиной;
-- отображение рекомендации места изменения или anchor для вставки;
-- отображение LLM-rerank кандидатов;
-- ручной выбор места изменения из кандидатов;
-- ручной ввод qualname места изменения;
-- блокировку обработки для недостаточно конкретного запроса;
-- запуск обработки через `codecollector`;
-- хранение связи запроса с запусками;
-- просмотр запусков, связанных с выбранным запросом;
-- просмотр общего списка запусков;
-- ограничение общего списка запусков по умолчанию;
-- открытие конкретного запуска напрямую из карточки запроса;
-- отображение результата запуска в компактном виде;
-- отображение ошибок проверок с кодом, сообщением, файлом, символом и деталями;
-- применение последнего результата запроса к основному проекту.
+- Выбор проекта из списка проектов, зарегистрированных в `codecollector`.
+- Регистрация нового проекта через `codecollector`.
+- Сохранение выбранного проекта в UI-состоянии.
+- Подключение JSON-файла требований.
+- Отображение требований иерархически по `parent_id`.
+- Просмотр выбранного требования.
+- Создание CR, связанного с одним или несколькими требованиями.
+- Хранение snapshot требований внутри CR.
+- Короткий код CR вида `CR-000001`.
+- Редактирование CR до применения результата к основному проекту.
+- Удаление CR до применения результата к основному проекту.
+- Анализ CR без обязательного ручного выбора операции.
+- Отображение качества запроса, операции, области вставки, роли места изменения, рекомендации, предупреждений, кандидатов и статистики анализа.
+- Ручной выбор операции, области вставки и места изменения.
+- Поддержка ролей места изменения: `target`, `anchor`, `parent_class`, `unknown`.
+- Блокировка обработки для недостаточного запроса.
+- Запуск обработки через `codecollector`.
+- Хранение связи CR с запусками pipeline.
+- Просмотр запусков, связанных с выбранным CR.
+- Просмотр общего списка запусков с ограничением по умолчанию и возможностью загрузить весь список.
+- Просмотр результата запуска: summary, шаги, проверки, план применения, статистика, diff, код, тест.
+- Отображение import changes, если они есть в code artifact или summary запуска.
+- Отображение generated test, его статуса и excluded files.
+- Отображение ошибок проверок с кодом, сообщением, файлом, символом и раскрываемыми деталями.
+- Применение последнего результата CR к основному проекту.
 
 ## Структура проекта
 
@@ -73,60 +68,94 @@ codeui/
     errors.py
     logger.py
     api/
+      __init__.py
+      routes_change_requests.py
+      routes_health.py
+      routes_projects.py
+      routes_requirements.py
+      routes_runs.py
+      routes_sessions.py
+      routes_settings.py
+      routes_ui_state.py
+      routes_workspaces.py
     schemas/
+      __init__.py
+      change_requests.py
+      common.py
+      requirements.py
+      runs.py
+      settings.py
+      ui_state.py
     services/
+      __init__.py
+      change_request_service.py
+      codecollector_client.py
+      command_runner.py
+      json_io.py
+      requirements_service.py
+      run_artifact_service.py
+      run_view_service.py
+      ui_state_service.py
     static/
+      index.html
+      app.js
+      styles.css
 ```
 
-### Основные файлы верхнего уровня
+## Основные файлы
 
-| Файл или каталог | Назначение |
-|---|---|
-| `README.md` | Описание текущего состояния проекта, запуска, структуры, API и ограничений. |
-| `AGENTS.md` | Контекст для агента, который дорабатывает проект. |
-| `pyproject.toml` | Метаданные Python-проекта и зависимости. |
-| `config.yaml` | Основная конфигурация приложения. |
-| `data/requirements.json` | Дефолтный файл требований для локального запуска. |
-| `data/ui_state.json` | Текущее состояние UI: выбранный проект, файл требований, выбранное требование и выбранный запрос. |
-| `data/change_requests/` | JSON-файлы запросов на изменение. |
-
-### Backend
-
-| Файл или каталог | Назначение |
-|---|---|
-| `codeui/main.py` | Создание FastAPI-приложения, подключение роутеров и static UI. |
-| `codeui/__main__.py` | Точка запуска `python -m codeui`. |
-| `codeui/config.py` | Загрузка и нормализация `config.yaml`. |
-| `codeui/dependencies.py` | Создание сервисов и зависимостей FastAPI. |
-| `codeui/errors.py` | Единый формат API-ошибок и исключения приложения. |
-| `codeui/logger.py` | Настройка логирования. |
-| `codeui/api/` | FastAPI-роутеры. |
-| `codeui/schemas/` | Pydantic-схемы входных и выходных данных. |
-| `codeui/services/command_runner.py` | Выполнение внешних CLI-команд с логированием. |
-| `codeui/services/codecollector_client.py` | CLI-клиент для вызова `codecollector`. |
-| `codeui/services/change_request_service.py` | Создание, изменение, удаление CR и управление их lifecycle. |
-| `codeui/services/requirements_service.py` | Чтение требований из JSON и построение дерева. |
-| `codeui/services/run_artifact_service.py` | Поиск и чтение артефактов запусков из `.runs`. |
-| `codeui/services/run_view_service.py` | Построение компактных view-models для результатов запуска. |
-| `codeui/services/ui_state_service.py` | Чтение и запись состояния UI. |
-| `codeui/services/json_io.py` | Безопасное чтение и запись JSON-файлов. |
-
-### Frontend
-
-| Файл | Назначение |
-|---|---|
-| `codeui/static/index.html` | Основная HTML-страница приложения. |
-| `codeui/static/styles.css` | Компактная desktop/form-like визуальная схема. |
-| `codeui/static/app.js` | Клиентская логика UI, вызовы API и отрисовка экранов. |
+- `README.md` — описание текущего состояния проекта.
+- `AGENTS.md` — краткий рабочий контекст для LLM-агента.
+- `pyproject.toml` — пакетная конфигурация и зависимости.
+- `config.yaml` — конфигурация приложения, путей и интеграции с `codecollector`.
+- `data/ui_state.json` — текущее пользовательское состояние UI.
+- `data/requirements.json` — пример или подключенный файл требований.
+- `data/change_requests/` — JSON-файлы пользовательских запросов на изменение.
+- `codeui/main.py` — создание FastAPI-приложения, регистрация маршрутов и static UI.
+- `codeui/config.py` — загрузка `config.yaml`, вычисление рабочих путей.
+- `codeui/errors.py` — единый формат API-ошибок.
+- `codeui/dependencies.py` — создание и передача сервисов в API routes.
+- `codeui/logger.py` — настройка логирования.
+- `codeui/api/routes_change_requests.py` — API для CR, analyze, select-target, run и apply.
+- `codeui/api/routes_projects.py` — API для чтения и регистрации проектов через `codecollector`.
+- `codeui/api/routes_requirements.py` — API для чтения требований и дерева требований.
+- `codeui/api/routes_runs.py` — API для просмотра run artifacts.
+- `codeui/api/routes_ui_state.py` — API для текущего состояния UI.
+- `codeui/services/change_request_service.py` — хранение CR, статусы, связь с analyze/run/apply.
+- `codeui/services/codecollector_client.py` — CLI-wrapper для вызова `codecollector`.
+- `codeui/services/command_runner.py` — запуск команд, timeout, stdout/stderr, логирование.
+- `codeui/services/requirements_service.py` — чтение и нормализация требований.
+- `codeui/services/run_artifact_service.py` — чтение run artifacts из `.runs`.
+- `codeui/services/run_view_service.py` — compact view-models для запуска.
+- `codeui/services/ui_state_service.py` — чтение и запись `data/ui_state.json`.
+- `codeui/services/json_io.py` — безопасное чтение и запись JSON-файлов.
+- `codeui/static/index.html` — HTML-структура UI.
+- `codeui/static/app.js` — клиентская логика UI.
+- `codeui/static/styles.css` — compact desktop-like оформление.
 
 ## Конфигурация
 
-Основной файл конфигурации — `config.yaml`.
+Основной файл настроек — `config.yaml`.
+
+В нем задаются:
+
+- имя приложения;
+- параметры HTTP-сервера;
+- уровень логирования;
+- путь к `codecollector`;
+- команда Python и module name для CLI-вызовов;
+- относительные пути `.runs`, `.state`, `.workspaces` внутри `codecollector`;
+- timeout команд;
+- директория хранения CR;
+- дефолтный источник требований;
+- UI-настройки.
+
+Пример:
 
 ```yaml
 app:
   name: "codeui"
-  version: "0.2.13"
+  version: "0.2"
 
 server:
   host: "127.0.0.1"
@@ -163,9 +192,9 @@ ui:
   default_runs_limit: 50
 ```
 
-`config.yaml` хранит настройки окружения, пути и режимы работы приложения. Текущий выбор пользователя в нем не хранится.
+Текущий выбор пользователя не хранится в `config.yaml`. Для этого используется `data/ui_state.json`.
 
-Текущее пользовательское состояние хранится в `data/ui_state.json`:
+Пример UI-состояния:
 
 ```json
 {
@@ -178,7 +207,9 @@ ui:
 
 ## Требования
 
-Требования подключаются как JSON-файл. Поддерживается объект с массивом `requirements`:
+`codeui` читает требования из JSON-файла. Поддерживается объект с массивом `requirements` или список требований на верхнем уровне.
+
+Пример:
 
 ```json
 {
@@ -187,76 +218,55 @@ ui:
       "id": "LLM-A-000011",
       "type": "BR",
       "status": "новое",
-      "priority": "medium",
-      "description": "Система должна ...",
+      "description": "Система должна автоматически проверять паспорт.",
       "parent_id": null,
-      "verification_status": "верифицировано",
-      "note": "...",
-      "created_at": "2026-04-01T12:00:00Z"
+      "verification_status": "верифицировано"
     }
   ]
 }
 ```
 
-Также допускается список требований на верхнем уровне:
-
-```json
-[
-  {
-    "id": "LLM-A-000011",
-    "type": "BR",
-    "description": "..."
-  }
-]
-```
-
-Требования в `codeui` доступны только для чтения. Приложение не редактирует файл требований.
+Требования в `codeui` только читаются. Иерархия строится по `parent_id`. Если `title` отсутствует, заголовок строится из начала `description`.
 
 Для отображения используются поля:
 
 - `id`;
-- `title`, если есть;
-- `description`;
+- `title`;
 - `type`;
+- `description`;
 - `status`;
 - `priority`;
 - `parent_id`;
 - `verification_status`;
 - `note`;
 - `created_at`;
-- `project_id`.
+- `project_id`;
+- `acceptance_criteria`;
+- `tags`;
+- `user_roles`.
 
-Иерархия строится по `parent_id`. Если `title` отсутствует, заголовок строится из начала `description`.
+Если требование связано с CR, UI показывает связанные запросы и их актуальные статусы.
 
 ## Запрос на изменение
 
-Запрос на изменение, или CR, — сущность `codeui`. CR связывает выбранный проект, требования, описание изменения, сессию анализа, выбранное место изменения и запуски обработки.
-
-CR хранится отдельным JSON-файлом в `data/change_requests/`.
+CR хранится как JSON-файл в `data/change_requests/`.
 
 Пример структуры:
 
 ```json
 {
-  "cr_id": "cr-20260428T112246024228Z-4dd977",
-  "code": "CR-000001",
+  "cr_id": "cr-20260504T155053968634Z-7d9bb3",
+  "code": "CR-000009",
   "project_id": "proj-...",
-  "requirement_id": "LLM-A-000011",
-  "requirement_ids": ["LLM-A-000011"],
-  "requirements_snapshot": [
-    {
-      "id": "LLM-A-000011",
-      "description": "...",
-      "type": "BR",
-      "verification_status": "верифицировано",
-      "missing": false
-    }
-  ],
+  "requirement_id": "REQ-...",
+  "requirement_ids": ["REQ-..."],
+  "requirements_snapshot": [],
   "title": "Изменить текст уведомления",
   "description": "Сделать уведомление на русском языке.",
   "constraints": ["Не менять внешний контракт API"],
   "notes": [],
   "requested_operation": null,
+  "insert_scope": null,
   "status": "draft",
   "session_id": null,
   "recommended_target": null,
@@ -270,175 +280,479 @@ CR хранится отдельным JSON-файлом в `data/change_request
 }
 ```
 
-`code` — короткий пользовательский идентификатор, например `CR-000001`. `cr_id` — технический идентификатор.
+`code` — пользовательский короткий идентификатор. `cr_id` — технический идентификатор.
 
-`requirements_snapshot` нужен для устойчивого отображения CR, если исходный файл требований недоступен или требование больше не найдено.
+`requirements_snapshot` нужен для устойчивого отображения CR, если файл требований недоступен или требование удалено.
 
-`requested_operation` — операция, выбранная пользователем вручную. Если значение `null`, анализ вызывается без операции, а `codecollector` пытается определить ее автоматически.
+`requested_operation` может быть пустым. В этом случае `sessions analyze` вызывается без operation, а `codecollector` пытается определить операцию автоматически.
 
-Результат последнего анализа сохраняется в `raw.last_analyze_result`. Из него UI берет качество запроса, рекомендованную операцию, источник операции, рекомендацию места изменения, кандидатов, предупреждения и статистику анализа.
+`insert_scope` используется для `insert_after_symbol` и определяет, куда вставляется новый код:
 
-## Статусы запроса
+- `module_body` — добавление top-level функции или класса в модуль;
+- `class_body` — добавление метода внутрь класса;
+- пусто — не применимо или еще не определено.
 
-| Статус | Значение |
-|---|---|
-| `draft` | Запрос создан, анализ еще не выполнен или исходные поля были изменены. |
-| `analyzed` | Анализ выполнен, запрос можно продолжать обрабатывать. |
-| `needs_user_decision` | Требуется действие пользователя: выбрать место изменения, уточнить операцию или изменить запрос. |
-| `analysis_insufficient` | Запрос недостаточно конкретный, обработка заблокирована до редактирования и повторного анализа. |
-| `target_selected` | Место изменения выбрано. |
-| `running` | Выполняется действие или обработка. |
-| `ready_for_merge_review` | Результат готов к ручной оценке и применению. |
-| `verification_failed` | Проверки не пройдены. |
-| `generated_test_verification_failed` | Основной код прошел проверки, но возникла проблема со сгенерированным тестом. |
-| `failed` | Ошибка выполнения действия. |
-| `applied` | Результат применен к основному проекту. |
+Если `requested_operation = insert_after_symbol`, UI должен явно показывать `insert_scope`. Если `insert_scope` не определен, пользователь выбирает его перед ручным select-target или запуском обработки.
 
-Финальный статус — только `applied`. Для CR в статусе `applied` недоступны редактирование, удаление, повторный анализ, повторный выбор места изменения, повторный запуск обработки и повторное применение результата.
+## Статусы CR
 
-`ready_for_merge_review` не является финальным статусом. В этом состоянии CR можно изменить и обработать заново.
+Используемые статусы:
 
-## Анализ запроса
+- `draft` — запрос создан или отредактирован;
+- `analyzing` — выполняется анализ;
+- `analyzed` — анализ дал рабочую рекомендацию;
+- `needs_user_decision` — требуется ручной выбор места изменения или уточнение;
+- `analysis_insufficient` — запрос недостаточно конкретный;
+- `selecting_target` — выполняется выбор места изменения;
+- `target_selected` — место изменения выбрано;
+- `running` — выполняется обработка;
+- `ready_for_merge_review` — результат готов к ручной оценке и применению;
+- `verification_failed` — production/runtime проверки не прошли;
+- `generated_test_verification_failed` — production-код можно рассматривать для review, но generated test не прошел проверку;
+- `repair_verification_failed` — repair был выполнен, но проверки не прошли;
+- `repair_no_effective_change` — repair не дал полезного изменения;
+- `failed` — ошибка выполнения;
+- `applied` — результат применен к основному проекту.
 
-Анализ запускается командой `codecollector sessions analyze`. Если пользователь не выбрал операцию вручную, `codeui` вызывает анализ без `--operation`. Если операция выбрана вручную, она передается явно.
+Только `applied` считается финальным статусом. Для `applied` запрещены analyze, select target, run, edit, delete и повторный apply.
 
-Анализ может вернуть качество запроса:
+`ready_for_merge_review` не является финальным статусом. Из этого состояния можно изменить CR и выполнить обработку заново.
 
-| Значение | Поведение UI |
-|---|---|
-| `processable` | Запрос достаточно конкретный, workflow можно продолжать. |
-| `uncertain` | Запрос частично неясный, можно продолжать с предупреждением и ручной проверкой. |
-| `insufficient` | Запрос слишком общий, обработку нужно блокировать. |
+## Analyze
 
-Если `request_quality.status = insufficient`, UI показывает причину и `missing_information`, не разрешает выбор места изменения как обход и не запускает обработку. Пользователь должен изменить название, описание или ограничения CR и выполнить анализ заново.
+Analyze запускает `sessions analyze` в `codecollector`.
 
-Анализ также возвращает сведения об операции:
+Если пользователь не выбрал операцию, analyze вызывается без `--operation`.
 
-| Поле | Значение |
-|---|---|
-| `requested_operation` | Итоговая операция, с которой работал analyze. |
-| `operation_source` | Источник определения операции. |
-| `operation_confidence` | Уверенность определения операции. |
-| `operation_reason` | Объяснение выбора операции. |
+Если пользователь выбрал операцию вручную, она передается явно.
 
-Возможные `operation_source`:
+Если операция `insert_after_symbol` и пользователь выбрал область вставки, передается `--insert-scope`.
 
-| Значение | Значение для UI |
-|---|---|
-| `user` | Операцию явно выбрал пользователь. |
-| `llm_search_plan` | Операция определена LLM на этапе плана поиска. |
-| `llm_rerank` | Операция уточнена LLM после просмотра кандидатов. |
-| `fallback` | Операция не определена надежно, использовано техническое значение по умолчанию. |
+Результат analyze сохраняется в `raw.last_analyze_result` CR.
 
-Если `operation_source = fallback`, операция не считается надежно выбранной. Перед выбором места изменения и запуском обработки пользователь должен выбрать операцию вручную.
-
-Рекомендация места изменения находится в `target_recommendation`:
-
-| Поле | Назначение |
-|---|---|
-| `recommended_target` | Рекомендованный qualname. |
-| `target_role` | Роль выбранного места: `target`, `anchor` или `unknown`. |
-| `target_confidence` | Уверенность выбора. |
-| `target_reason` | Объяснение рекомендации. |
-| `manual_review_required` | Признак необходимости ручной проверки. |
-| `warnings` | Предупреждения анализа. |
-| `ranked_candidates` | Результат LLM-rerank кандидатов. |
-| `post_processing` | Дополнительная информация о корректировке anchor, если она применялась. |
-
-Для `insert_after_symbol` роль `anchor` означает, что выбранный symbol является местом, после которого будет вставлен новый код.
-
-## Кандидаты места изменения
-
-Кандидаты отображаются после анализа. Для каждого кандидата используются поля:
-
-- `qualname`;
-- `name`;
-- `kind`;
-- `file_path`;
-- `score`;
-- `confidence`;
-- `relevance_category`;
-- `reasons`;
-- `docstring`;
-- `knowledge_title`;
-- `requirements`;
-- `ranked_by_llm`;
-- `llm_recommended`;
-- `llm_rank`;
-- `llm_reason`.
-
-Если `llm_recommended = true`, кандидат является основной рекомендацией LLM. Если `ranked_by_llm = false`, кандидат найден поиском, но не участвовал в финальном LLM-rerank.
-
-Выбор места изменения выполняется через `sessions select-target`. При выборе передается qualname и операция. Операция должна быть заполнена надежным значением: выбранным пользователем или принятым из результата анализа.
-
-## Запуски и результаты обработки
-
-Запуски физически хранятся в `.runs` проекта `codecollector`. `codeui` не копирует тяжелые артефакты в свое хранилище.
-
-Типовая структура run-директории:
-
-```text
-codecollector/.runs/pipeline-.../
-  pipeline_run_*.json
-  generation_request.json
-  generation_result.json
-  generation_test_request.json
-  generation_test_result.json
-  repair_request.json
-  repair_result.json
-  codegenerator_stderr.txt
-  codegenerator_test_stderr.txt
-```
-
-CR хранит связь с запусками через поля `run_ids` и `last_run_id`. Экран CR показывает только связанные с ним запуски. Экран `Запуски` показывает последние N запусков и может открыть конкретный запуск напрямую.
-
-Результат запуска отображается компактно:
-
-- общий результат;
-- основная проблема, если запуск завершился ошибкой;
-- план применения;
-- список шагов с таймингами и usage;
-- проверки;
-- diff;
-- сгенерированный код;
-- сгенерированный тест;
-- статистика ресурсов.
-
-Raw JSON используется как дополнительная возможность просмотра, а не как основной экран.
-
-## Применение результата
-
-Применение результата выполняется отдельным действием пользователя. Применять можно только последний запуск выбранного CR.
-
-После успешного применения:
-
-- CR получает статус `applied`;
-- сохраняются `applied_at` и `applied_run_id`;
-- дальнейшее редактирование, удаление, анализ, запуск обработки и повторное применение блокируются.
-
-## API
-
-Все endpoint-ы используют префикс `/api`.
-
-Ошибки возвращаются в едином формате:
+Основные поля результата:
 
 ```json
 {
-  "error": {
-    "code": "RUN_NOT_FOUND",
-    "message": "Run not found: pipeline-...",
-    "details": {}
+  "session_id": "sess-...",
+  "project_id": "proj-...",
+  "requested_operation": "insert_after_symbol",
+  "insert_scope": "class_body",
+  "operation_source": "llm_rerank",
+  "operation_confidence": 0.95,
+  "operation_reason": "...",
+  "request_quality": {
+    "status": "processable",
+    "reason": "...",
+    "missing_information": []
+  },
+  "target_recommendation": {
+    "recommended_target": "support_app.storage.ticket_repository.TicketRepository",
+    "target_role": "parent_class",
+    "target_confidence": 1.0,
+    "target_reason": "...",
+    "manual_review_required": false,
+    "warnings": []
+  },
+  "candidates": [],
+  "analysis_usage": {},
+  "result_summary": {
+    "status": "analyzed",
+    "requested_operation": "insert_after_symbol",
+    "insert_scope": "class_body",
+    "recommended_target": "support_app.storage.ticket_repository.TicketRepository",
+    "manual_review_required": false,
+    "request_quality_status": "processable",
+    "target_selection_confidence": 1.0,
+    "recall_candidates_count": 12,
+    "returned_candidates_count": 5,
+    "has_context_summary": true
   }
 }
 ```
 
+UI показывает:
+
+- `session_id`;
+- `project_id`;
+- `result_summary.status`;
+- `requested_operation`;
+- `insert_scope`;
+- `recommended_target`;
+- `manual_review_required`;
+- `request_quality.status`;
+- `operation_source`;
+- `operation_confidence`;
+- `operation_reason`;
+- `target_selection_source`;
+- `target_selection_confidence`;
+- `recall_candidates_count`;
+- `returned_candidates_count`;
+- `has_context_summary`.
+
+Если `request_quality.status = insufficient`, UI не разрешает select-target и generate. Пользователь должен изменить CR и выполнить analyze заново.
+
+Если `result_summary.status = needs_user_decision`, но `request_quality.status != insufficient`, пользователь может выбрать место изменения вручную.
+
+## Operation, insert scope и target role
+
+Поддерживаемые операции:
+
+- `replace_symbol` — заменить существующий символ;
+- `insert_after_symbol` — вставить новый код относительно существующего символа или внутрь класса.
+
+Поддерживаемые `insert_scope`:
+
+- `module_body` — добавление top-level функции или класса в модуль;
+- `class_body` — добавление метода внутрь класса;
+- пусто — не применимо для `replace_symbol` или еще не определено.
+
+Поддерживаемые роли места изменения:
+
+- `target` — символ будет заменен;
+- `anchor` — символ используется как точка вставки;
+- `parent_class` — класс, внутрь которого будет добавлен новый метод;
+- `unknown` — место изменения не определено.
+
+UI не должен смешивать эти значения. Для `class_body` нужно показывать, что выбранный symbol является родительским классом. Для `module_body` нужно показывать, что выбранный symbol является anchor для вставки после него.
+
+## Кандидаты места изменения
+
+Кандидат может содержать:
+
+```json
+{
+  "qualname": "support_app.services.report_service.build_priority_label",
+  "name": "build_priority_label",
+  "kind": "function",
+  "file_path": "support_app/services/report_service.py",
+  "score": 17.82,
+  "confidence": 0.93,
+  "relevance_category": "высокая",
+  "reasons": [],
+  "docstring": "...",
+  "knowledge_title": "...",
+  "requirements": [],
+  "ranked_by_llm": true,
+  "llm_recommended": true,
+  "llm_rank": 1,
+  "llm_reason": "..."
+}
+```
+
+UI показывает:
+
+- имя;
+- qualname;
+- kind;
+- file path;
+- score/confidence;
+- relevance category;
+- LLM rank, если есть;
+- признак `llm_recommended`;
+- признак `ranked_by_llm`;
+- reasons;
+- docstring;
+- requirements.
+
+Если `ranked_by_llm = false`, кандидат не должен отображаться как оцененный LLM. Для него используется метка “не ранжировался LLM”.
+
+## Select target
+
+Select target фиксирует выбранное место изменения в сессии `codecollector`.
+
+Для `insert_after_symbol` вместе с qualname передаются operation и insert scope.
+
+CLI-аналог:
+
+```bash
+python -m codecollector sessions select-target \
+  --session-id sess-... \
+  --selected-qualname support_app.storage.ticket_repository.TicketRepository \
+  --operation insert_after_symbol \
+  --insert-scope class_body
+```
+
+API-вызов `codeui`:
+
+```bash
+curl -X POST http://127.0.0.1:8088/api/change-requests/cr-.../select-target \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "selected_qualname": "support_app.storage.ticket_repository.TicketRepository",
+    "operation": "insert_after_symbol",
+    "insert_scope": "class_body"
+  }'
+```
+
+Если CR находится в состоянии `analysis_insufficient`, select-target не должен использоваться как обход. Нужно изменить CR и выполнить analyze заново.
+
+## Generate
+
+Generate запускает `sessions generate` в `codecollector`.
+
+Генерация разрешена, если:
+
+- CR не `applied`;
+- request quality не `insufficient`;
+- выбрана надежная operation;
+- если operation `insert_after_symbol`, выбран `insert_scope`;
+- есть selected target или надежно рекомендованный target;
+- сессия готова к генерации.
+
+Если generate возвращает бизнес-блокировку, UI показывает ее как нормальное состояние, а не как crash.
+
+Пример блокировки:
+
+```json
+{
+  "pipeline_result": null,
+  "result_summary": {
+    "status": "needs_user_decision",
+    "generation_blocked": true,
+    "block_reason": "insufficient_request",
+    "message": "Request is insufficient for generation. Rewrite the request and run analyze again.",
+    "request_quality_status": "insufficient",
+    "missing_information": [
+      "конкретное улучшаемое поведение",
+      "желаемый результат"
+    ],
+    "recommended_action": "rewrite_request_and_run_analyze_again"
+  }
+}
+```
+
+Для `block_reason = insufficient_request` UI показывает, что запрос недостаточно конкретен и его нужно переписать.
+
+Для `block_reason = session_not_ready` UI показывает, что сессия не готова к генерации и нужно выбрать target/anchor или выполнить analyze заново.
+
+## Run artifacts и результат запуска
+
+После успешного запуска `codecollector` сохраняет run artifacts в `.runs`.
+
+`codeui` читает их из проекта `codecollector` и строит компактные view-models.
+
+Основные поля result summary:
+
+```json
+{
+  "status": "ready_for_merge_review",
+  "selected_target": "support_app.storage.ticket_repository.TicketRepository",
+  "requested_operation": "insert_after_symbol",
+  "final_operation": "insert_after_symbol",
+  "insert_scope": "class_body",
+  "workspace_path": "...",
+  "changed_files": [],
+  "symbols_in_changed_files": [],
+  "verification_passed": true,
+  "merge_mode": "dry_run",
+  "merge_ready": true,
+  "has_generated_test": true,
+  "generated_test_files": [],
+  "repair_used": false,
+  "excluded_files": []
+}
+```
+
+UI показывает:
+
+- итоговый статус;
+- selected target;
+- operation;
+- insert scope;
+- workspace path;
+- changed files;
+- symbols in changed files;
+- verification status;
+- generated test files;
+- repair used;
+- merge ready;
+- excluded files;
+- plan summary lines.
+
+## Import changes
+
+`codegenerator` может вернуть `import_changes` внутри `code_artifact`, а `codecollector` применяет их к target file.
+
+Пример:
+
+```json
+{
+  "code_artifact": {
+    "operation": "insert_after_symbol",
+    "target_qualname": "support_app.storage.ticket_repository.TicketRepository",
+    "target_file": "support_app/storage/ticket_repository.py",
+    "insert_scope": "class_body",
+    "expected_new_symbol_kind": "method",
+    "parent_qualname": "support_app.storage.ticket_repository.TicketRepository",
+    "code": "def export_ticket_ids(self, path: Path) -> None:\n    ...",
+    "import_changes": [
+      {
+        "action": "add_from_import",
+        "module": "pathlib",
+        "names": ["Path"]
+      }
+    ]
+  }
+}
+```
+
+UI показывает import changes в составе code artifact и плана применения. В diff они отображаются как обычное изменение файла. Пользователь не выполняет отдельную операцию для imports.
+
+## Проверки
+
+Verification report содержит список blocks.
+
+Пример:
+
+```json
+{
+  "name": "runtime_py_compile",
+  "ok": true,
+  "severity": "info",
+  "issues": [],
+  "details": {}
+}
+```
+
+UI показывает:
+
+- name;
+- ok;
+- severity;
+- issues;
+- details по раскрытию.
+
+Основные блоки:
+
+- `patch_static_semantics`;
+- `generated_test_static_semantics`;
+- `generated_test_relevance`;
+- `runtime_ast_parse`;
+- `runtime_py_compile`;
+- `runtime_pytest_recommended`.
+
+Если `ok = false`, issues выводятся крупно и понятно. Элементы `issues` могут быть объектами, поэтому их нельзя выводить как строку через `join`. Для issue показываются `code`, `severity`, `message`, `file_path`, `symbol`.
+
+## Generated test
+
+Если `has_generated_test = true`, UI показывает:
+
+- список generated test files;
+- test artifact source, если он доступен;
+- verification blocks, связанные с generated test;
+- статус `generated_test_apply`.
+
+Если generated test создан, но не прошел verification, статус запуска может быть `generated_test_verification_failed`. Это не равно обычному production failure.
+
+Для такого результата UI показывает:
+
+- production-код можно рассматривать для review;
+- generated test не прошел проверку;
+- generated test может быть исключен из apply;
+- apply разрешается только если merge plan готов к ручному применению.
+
+Если test generation не вернул artifact, UI показывает warning, а не считает это обычной ситуацией “тестов нет”.
+
+## Статистика
+
+Для analyze UI показывает `analysis_usage`:
+
+- calls;
+- prompt tokens;
+- output tokens;
+- total tokens;
+- prompt chars;
+- duration sec;
+- steps.search_plan;
+- steps.candidate_rerank;
+- timings.
+
+Пример:
+
+```json
+{
+  "analysis_usage": {
+    "calls": 2,
+    "prompt_tokens": 5338,
+    "output_tokens": 978,
+    "total_tokens": 6316,
+    "prompt_chars": 20920,
+    "duration_sec": 28.51,
+    "timings": {
+      "search_plan_total_sec": 6.85,
+      "recall_search_sec": 2.75,
+      "candidate_rerank_total_sec": 18.74
+    }
+  }
+}
+```
+
+Для pipeline/codegenerator UI показывает usage из:
+
+- `external_code_generation.result_summary.llm_usage`;
+- `external_test_generation.result_summary.llm_usage`;
+- `repair_generation.result_summary.llm_usage`, если есть.
+
+Также UI показывает prompt/context metrics, если они есть в run artifacts:
+
+- request chars;
+- target source chars;
+- related test chars;
+- reference chars;
+- full file included;
+- trim steps.
+
+## API
+
+Основные группы API:
+
+```text
+GET  /api/health
+GET  /api/settings
+GET  /api/ui-state
+PUT  /api/ui-state
+POST /api/ui-state/select-project
+POST /api/ui-state/requirements-file
+
+GET  /api/projects
+POST /api/projects/register
+
+GET  /api/requirements
+GET  /api/requirements/tree
+GET  /api/requirements/{requirement_id}
+
+GET    /api/change-requests
+POST   /api/change-requests
+GET    /api/change-requests/{cr_id}
+PUT    /api/change-requests/{cr_id}
+DELETE /api/change-requests/{cr_id}
+GET    /api/change-requests/{cr_id}/runs
+POST   /api/change-requests/{cr_id}/analyze
+POST   /api/change-requests/{cr_id}/select-target
+POST   /api/change-requests/{cr_id}/run
+POST   /api/change-requests/{cr_id}/apply-last-run
+
+GET  /api/sessions
+GET  /api/sessions/{session_id}
+
+GET  /api/runs
+GET  /api/runs?limit=50
+GET  /api/runs?all=true
+GET  /api/runs/{run_id}/summary
+GET  /api/runs/{run_id}/steps
+GET  /api/runs/{run_id}/checks
+GET  /api/runs/{run_id}/diff
+GET  /api/runs/{run_id}/code
+GET  /api/runs/{run_id}/test
+GET  /api/runs/{run_id}/raw
+```
+
 ### Health и настройки
 
-#### `GET /api/health`
-
-Проверяет доступность приложения.
-
-Пример ответа:
+```bash
+curl http://127.0.0.1:8088/api/health
+```
 
 ```json
 {
@@ -447,367 +761,145 @@ Raw JSON используется как дополнительная возмо
 }
 ```
 
-#### `GET /api/settings`
-
-Возвращает основные настройки приложения без изменения состояния.
-
-Пример:
-
 ```bash
 curl http://127.0.0.1:8088/api/settings
 ```
 
-Пример ответа:
-
-```json
-{
-  "app_name": "codeui",
-  "app_version": "0.2.13",
-  "codecollector_root": "/home/stickt/llm/codecollector",
-  "runs_root": "/home/stickt/llm/codecollector/.runs",
-  "workspaces_root": "/home/stickt/llm/codecollector/.workspaces",
-  "change_requests_root": "/home/stickt/llm/codeui/data/change_requests",
-  "ui": {
-    "poll_interval_ms": 1500,
-    "show_raw_json": true,
-    "show_debug_artifacts": true
-  }
-}
-```
-
 ### UI-состояние
-
-#### `GET /api/ui-state`
-
-Возвращает текущий выбранный проект, файл требований, выбранные требования и выбранный CR.
 
 ```bash
 curl http://127.0.0.1:8088/api/ui-state
 ```
 
-#### `PUT /api/ui-state`
-
-Обновляет UI-состояние.
-
 ```bash
 curl -X PUT http://127.0.0.1:8088/api/ui-state \
   -H 'Content-Type: application/json' \
   -d '{
-    "selected_project_id": "proj-20260401T124114819654Z-107054",
+    "selected_project_id": "proj-...",
     "requirements_file_path": "data/requirements.json",
-    "selected_requirement_ids": ["LLM-A-000011"],
+    "selected_requirement_ids": ["REQ-..."],
     "selected_change_request_id": "cr-..."
   }'
 ```
 
-#### `POST /api/ui-state/select-project`
-
-Сохраняет выбранный проект.
-
 ```bash
 curl -X POST http://127.0.0.1:8088/api/ui-state/select-project \
   -H 'Content-Type: application/json' \
-  -d '{"project_id":"proj-20260401T124114819654Z-107054"}'
+  -d '{"project_id": "proj-..."}'
 ```
-
-#### `POST /api/ui-state/requirements-file`
-
-Сохраняет путь к файлу требований.
 
 ```bash
 curl -X POST http://127.0.0.1:8088/api/ui-state/requirements-file \
   -H 'Content-Type: application/json' \
-  -d '{"path":"/home/stickt/llm/codeui/data/requirements.json"}'
+  -d '{"path": "/home/stickt/llm/codeui/data/requirements.json"}'
 ```
 
 ### Проекты
-
-#### `GET /api/projects`
-
-Возвращает проекты, зарегистрированные в `codecollector`.
 
 ```bash
 curl http://127.0.0.1:8088/api/projects
 ```
 
-Пример ответа:
-
-```json
-{
-  "items": [
-    {
-      "project_id": "proj-20260401T124114819654Z-107054",
-      "project_name": "sample_python_app",
-      "project_root": "/home/stickt/llm/codecollector/demo_projects/sample_python_app",
-      "languages": ["python"],
-      "status": "ready"
-    }
-  ],
-  "count": 1
-}
-```
-
-#### `POST /api/projects/register`
-
-Регистрирует новый проект через `codecollector`.
-
 ```bash
 curl -X POST http://127.0.0.1:8088/api/projects/register \
   -H 'Content-Type: application/json' \
   -d '{
-    "project_name": "my_app",
-    "project_root": "/home/stickt/projects/my_app",
+    "project_name": "sample_python_app",
+    "project_root": "/home/stickt/llm/codecollector/demo_projects/sample_python_app",
     "languages": ["python"]
   }'
 ```
 
 ### Требования
 
-#### `GET /api/requirements`
-
-Возвращает плоский список требований из выбранного JSON-файла.
-
 ```bash
 curl http://127.0.0.1:8088/api/requirements
 ```
-
-#### `GET /api/requirements/tree`
-
-Возвращает дерево требований, построенное по `parent_id`.
 
 ```bash
 curl http://127.0.0.1:8088/api/requirements/tree
 ```
 
-#### `GET /api/requirements/{requirement_id}`
-
-Возвращает одно требование.
-
 ```bash
 curl http://127.0.0.1:8088/api/requirements/LLM-A-000011
 ```
 
-### Запросы на изменение
-
-#### `GET /api/change-requests`
-
-Возвращает список CR. Можно фильтровать по требованию.
-
-```bash
-curl http://127.0.0.1:8088/api/change-requests
-curl 'http://127.0.0.1:8088/api/change-requests?requirement_id=LLM-A-000011'
-```
-
-#### `POST /api/change-requests`
-
-Создает CR.
+### Создание CR
 
 ```bash
 curl -X POST http://127.0.0.1:8088/api/change-requests \
   -H 'Content-Type: application/json' \
   -d '{
-    "project_id": "proj-20260401T124114819654Z-107054",
+    "project_id": "proj-...",
     "requirement_ids": ["LLM-A-000011"],
-    "code": "CR-000001",
     "title": "Изменить текст уведомления",
     "description": "Сделать уведомление на русском языке.",
     "constraints": ["Не менять внешний контракт API"],
-    "requested_operation": null
+    "requested_operation": null,
+    "insert_scope": null
   }'
 ```
 
-#### `GET /api/change-requests/{cr_id}`
-
-Возвращает CR.
+### Analyze с автоматическим определением операции
 
 ```bash
-curl http://127.0.0.1:8088/api/change-requests/cr-...
+curl -X POST http://127.0.0.1:8088/api/change-requests/cr-.../analyze \
+  -H 'Content-Type: application/json' \
+  -d '{}'
 ```
 
-#### `PUT /api/change-requests/{cr_id}`
-
-Обновляет CR. Если меняются исходные поля запроса, результаты анализа и последний run сбрасываются как устаревшие.
+### Analyze с ручной операцией и областью вставки
 
 ```bash
-curl -X PUT http://127.0.0.1:8088/api/change-requests/cr-... \
+curl -X POST http://127.0.0.1:8088/api/change-requests/cr-.../analyze \
   -H 'Content-Type: application/json' \
   -d '{
-    "title": "Новое название",
-    "description": "Новое описание",
-    "constraints": ["Новое ограничение"],
-    "requested_operation": "replace_symbol"
+    "operation": "insert_after_symbol",
+    "insert_scope": "class_body"
   }'
 ```
 
-#### `DELETE /api/change-requests/{cr_id}`
-
-Удаляет CR, если он не находится в статусе `applied`.
-
-```bash
-curl -X DELETE http://127.0.0.1:8088/api/change-requests/cr-...
-```
-
-#### `GET /api/change-requests/{cr_id}/runs`
-
-Возвращает запуски, связанные с CR.
-
-```bash
-curl http://127.0.0.1:8088/api/change-requests/cr-.../runs
-```
-
-#### `POST /api/change-requests/{cr_id}/analyze`
-
-Запускает анализ CR. Если `requested_operation = null`, операция не передается в `codecollector`, и analyze определяет ее автоматически.
-
-```bash
-curl -X POST http://127.0.0.1:8088/api/change-requests/cr-.../analyze
-```
-
-Пример фрагмента ответа:
-
-```json
-{
-  "session_id": "sess-...",
-  "requested_operation": "replace_symbol",
-  "operation_source": "llm_search_plan",
-  "operation_confidence": 0.6,
-  "request_quality": {
-    "status": "processable",
-    "reason": "...",
-    "missing_information": []
-  },
-  "target_recommendation": {
-    "recommended_target": "support_app.services.notification_service.build_assignment_message",
-    "target_role": "target",
-    "target_confidence": 0.95,
-    "manual_review_required": false
-  },
-  "result_summary": {
-    "status": "analyzed",
-    "request_quality_status": "processable"
-  }
-}
-```
-
-#### `POST /api/change-requests/{cr_id}/select-target`
-
-Фиксирует выбранное место изменения. Операция передается вместе с qualname.
+### Выбор места изменения
 
 ```bash
 curl -X POST http://127.0.0.1:8088/api/change-requests/cr-.../select-target \
   -H 'Content-Type: application/json' \
   -d '{
-    "selected_qualname": "support_app.services.notification_service.build_assignment_message",
-    "operation": "replace_symbol"
+    "selected_qualname": "support_app.storage.ticket_repository.TicketRepository",
+    "operation": "insert_after_symbol",
+    "insert_scope": "class_body"
   }'
 ```
 
-#### `POST /api/change-requests/{cr_id}/run`
-
-Запускает обработку CR. Обработка блокируется, если запрос недостаточно конкретный, операция не выбрана или место изменения не выбрано.
+### Запуск обработки
 
 ```bash
 curl -X POST http://127.0.0.1:8088/api/change-requests/cr-.../run
 ```
 
-Если `codecollector` вернул бизнес-блокировку генерации, ответ не считается runtime-ошибкой. UI должен показать причину и рекомендуемое действие.
-
-#### `POST /api/change-requests/{cr_id}/apply-last-run`
-
-Применяет последний результат CR к основному проекту.
+### Применение последнего результата
 
 ```bash
 curl -X POST http://127.0.0.1:8088/api/change-requests/cr-.../apply-last-run
 ```
 
-### Сессии
-
-#### `GET /api/sessions`
-
-Возвращает список сессий `codecollector`, если соответствующий CLI-доступ доступен.
-
-```bash
-curl http://127.0.0.1:8088/api/sessions
-```
-
-#### `GET /api/sessions/{session_id}`
-
-Возвращает одну сессию.
-
-```bash
-curl http://127.0.0.1:8088/api/sessions/sess-...
-```
-
 ### Запуски
 
-#### `GET /api/runs`
-
-Возвращает список запусков. По умолчанию возвращаются последние N запусков.
-
 ```bash
-curl http://127.0.0.1:8088/api/runs
-curl 'http://127.0.0.1:8088/api/runs?limit=50'
+curl http://127.0.0.1:8088/api/runs?limit=50
 ```
 
-Все запуски:
-
 ```bash
-curl 'http://127.0.0.1:8088/api/runs?all=true'
+curl http://127.0.0.1:8088/api/runs?all=true
 ```
-
-#### `GET /api/runs/{run_id}/summary`
-
-Возвращает компактный результат запуска.
 
 ```bash
 curl http://127.0.0.1:8088/api/runs/pipeline-.../summary
-```
-
-#### `GET /api/runs/{run_id}/steps`
-
-Возвращает шаги pipeline с таймингами и usage, если usage доступен.
-
-```bash
 curl http://127.0.0.1:8088/api/runs/pipeline-.../steps
-```
-
-#### `GET /api/runs/{run_id}/checks`
-
-Возвращает verification blocks и issues.
-
-```bash
 curl http://127.0.0.1:8088/api/runs/pipeline-.../checks
-```
-
-#### `GET /api/runs/{run_id}/diff`
-
-Возвращает список измененных файлов и unified diff.
-
-```bash
 curl http://127.0.0.1:8088/api/runs/pipeline-.../diff
-```
-
-#### `GET /api/runs/{run_id}/code`
-
-Возвращает generated code artifact и связанные сведения.
-
-```bash
 curl http://127.0.0.1:8088/api/runs/pipeline-.../code
-```
-
-#### `GET /api/runs/{run_id}/test`
-
-Возвращает generated test artifact, если он был создан.
-
-```bash
 curl http://127.0.0.1:8088/api/runs/pipeline-.../test
-```
-
-#### `GET /api/runs/{run_id}/raw`
-
-Возвращает raw JSON-артефакты запуска для отладки.
-
-```bash
 curl http://127.0.0.1:8088/api/runs/pipeline-.../raw
 ```
 
@@ -816,22 +908,34 @@ curl http://127.0.0.1:8088/api/runs/pipeline-.../raw
 `codeui` логирует:
 
 - запуск приложения;
+- чтение конфигурации;
 - вызовы CLI `codecollector`;
 - рабочую директорию и команду;
-- длительность выполнения команды;
 - код возврата;
+- длительность;
 - размер stdout/stderr;
-- ошибки чтения и записи JSON;
-- создание, изменение и удаление CR;
-- запуск анализа и обработки;
-- применение результата к основному проекту;
-- ошибки чтения run artifacts.
+- ошибки чтения/записи JSON;
+- изменения UI-состояния;
+- создание и изменение CR;
+- привязку CR к run;
+- чтение run artifacts;
+- применение результата к основному проекту.
 
-Большие JSON, diff, исходный код, prompt и raw output не должны выводиться в лог целиком. Для них логируются размеры, пути и короткие summary.
+Ошибки API возвращаются в едином формате:
 
-## Запуск и проверка
+```json
+{
+  "error": {
+    "code": "...",
+    "message": "...",
+    "details": {}
+  }
+}
+```
 
-Установка и запуск:
+Не логируются целиком большие JSON, diff, исходный код, prompt или raw output. Вместо этого логируются размеры, пути и короткие summary.
+
+## Запуск
 
 ```bash
 cd /home/stickt/llm/codeui
@@ -841,11 +945,13 @@ pip install -e .
 python -m codeui
 ```
 
-Приложение доступно по адресу:
+По умолчанию приложение доступно по адресу:
 
 ```text
 http://127.0.0.1:8088/
 ```
+
+## Проверки разработки
 
 Проверка Python-синтаксиса:
 
@@ -859,14 +965,16 @@ python -m compileall codeui
 node --check codeui/static/app.js
 ```
 
-## Текущие ограничения
+## Ограничения текущего состояния
 
 - Аутентификация и авторизация не реализованы.
 - Проекты не хранятся в `codeui`; список читается из `codecollector`.
 - Требования подключаются как JSON-файл и не редактируются в UI.
 - CR хранятся в JSON-файлах.
-- Общее состояние UI хранится в JSON-файле.
 - Pipeline выполняется в `codecollector`.
-- Тяжелые run artifacts остаются в `.runs` проекта `codecollector`.
+- Связь между CR и запусками хранится в JSON-файле CR.
+- Общее хранилище состояния — файловое, без отдельной базы данных.
+- Основной экран показывает компактные представления run artifacts, не полный `pipeline_run_*.json`.
+- Raw JSON доступен только как дополнительный режим просмотра.
 - Применение результата выполняется только после отдельного решения пользователя.
-- Настройки моделей, prompt budget, reference library и verification pipeline находятся вне `codeui`.
+- При `insufficient_request` нужно изменить CR и повторить analyze; select-target не считается исправлением недостаточного запроса.

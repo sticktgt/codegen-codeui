@@ -77,7 +77,7 @@ class ChangeRequestService:
 
         data = view.model_dump()
         patch = request.model_dump(exclude_unset=True)
-        pipeline_input_fields = {"title", "description", "constraints", "notes", "requested_operation", "requirement_id", "requirement_ids"}
+        pipeline_input_fields = {"title", "description", "constraints", "notes", "requested_operation", "insert_scope", "requirement_id", "requirement_ids"}
         should_reset_pipeline_state = any(
             key in patch and patch.get(key) != getattr(view, key)
             for key in pipeline_input_fields
@@ -140,7 +140,7 @@ class ChangeRequestService:
 
     _UNSET = object()
 
-    def mark_processing(self, cr_id: str, status: str, *, requested_operation: str | None | object = _UNSET) -> ChangeRequestView:
+    def mark_processing(self, cr_id: str, status: str, *, requested_operation: str | None | object = _UNSET, insert_scope: str | None | object = _UNSET) -> ChangeRequestView:
         if status not in PROCESSING_STATUSES:
             raise ApiError("INVALID_PROCESSING_STATUS", f"Unsupported processing status: {status}", status_code=500)
         view = self.get_change_request(cr_id)
@@ -163,6 +163,12 @@ class ChangeRequestService:
             if view.raw is None or not isinstance(view.raw, dict):
                 view.raw = {}
             view.raw["operation_selection_source"] = "user" if requested_operation else "none"
+        if insert_scope is not self._UNSET:
+            normalized_insert_scope = self._normalize_insert_scope(insert_scope)
+            view.insert_scope = normalized_insert_scope
+            if view.raw is None or not isinstance(view.raw, dict):
+                view.raw = {}
+            view.raw["insert_scope_selection_source"] = "user" if normalized_insert_scope else "none"
         if status == "analyzing":
             self._clear_analysis_state(view)
         view.status = status
@@ -227,6 +233,22 @@ class ChangeRequestService:
             view.requested_operation = None
             view.raw["operation_selection_source"] = "fallback" if operation_source == "fallback" else "none"
 
+        search_plan = result.get("search_plan") if isinstance(result.get("search_plan"), dict) else {}
+        post_processing = recommendation.get("post_processing") if isinstance(recommendation.get("post_processing"), dict) else {}
+        insert_scope = self._normalize_insert_scope(
+            result.get("insert_scope"),
+            summary.get("insert_scope"),
+            recommendation.get("insert_scope"),
+            search_plan.get("insert_scope"),
+            post_processing.get("insert_scope"),
+        )
+        if insert_scope:
+            view.insert_scope = insert_scope
+            view.raw["insert_scope_selection_source"] = "analysis"
+        elif view.requested_operation != "insert_after_symbol":
+            view.insert_scope = None
+            view.raw["insert_scope_selection_source"] = "none"
+
         view.updated_at = datetime.now(timezone.utc)
         view.raw.pop("last_error", None)
         view.raw.pop("last_select_result", None)
@@ -234,7 +256,7 @@ class ChangeRequestService:
         self._save(view)
         return view
 
-    def update_from_select_result(self, cr_id: str, result: dict[str, Any], *, operation: str | None = None) -> ChangeRequestView:
+    def update_from_select_result(self, cr_id: str, result: dict[str, Any], *, operation: str | None = None, insert_scope: str | None = None) -> ChangeRequestView:
         view = self.get_change_request(cr_id)
         summary = result.get("result_summary", {}) if isinstance(result.get("result_summary"), dict) else {}
         view.status = str(summary.get("status") or result.get("status") or "target_selected")
@@ -243,6 +265,14 @@ class ChangeRequestService:
         if operation:
             view.requested_operation = operation  # operation confirmed for this target selection
             view.raw["operation_selection_source"] = "user"
+        select_summary = result.get("result_summary") if isinstance(result.get("result_summary"), dict) else {}
+        result_insert_scope = self._normalize_insert_scope(insert_scope, result.get("insert_scope"), select_summary.get("insert_scope"))
+        if result_insert_scope:
+            view.insert_scope = result_insert_scope
+            view.raw["insert_scope_selection_source"] = "user" if insert_scope else "codecollector"
+        elif operation != "insert_after_symbol":
+            view.insert_scope = None
+            view.raw["insert_scope_selection_source"] = "none"
         view.updated_at = datetime.now(timezone.utc)
         view.raw.pop("last_error", None)
         view.raw["last_select_result"] = result
@@ -291,7 +321,43 @@ class ChangeRequestService:
             return str(operation)
         return None
 
-    def generation_block_result(self, view: ChangeRequestView, *, operation_override: str | None = None) -> dict[str, Any] | None:
+    def effective_insert_scope(self, view: ChangeRequestView) -> str | None:
+        if view.insert_scope:
+            return view.insert_scope
+        analyze = self._last_analyze_result(view)
+        summary = analyze.get("result_summary") if isinstance(analyze.get("result_summary"), dict) else {}
+        recommendation = analyze.get("target_recommendation") if isinstance(analyze.get("target_recommendation"), dict) else {}
+        post_processing = recommendation.get("post_processing") if isinstance(recommendation.get("post_processing"), dict) else {}
+        search_plan = analyze.get("search_plan") if isinstance(analyze.get("search_plan"), dict) else {}
+        return self._normalize_insert_scope(
+            analyze.get("insert_scope"),
+            summary.get("insert_scope"),
+            recommendation.get("insert_scope"),
+            search_plan.get("insert_scope"),
+            post_processing.get("insert_scope"),
+        )
+
+    @staticmethod
+    def _normalize_insert_scope(*values: Any) -> str | None:
+        """Return canonical insert_scope from strings or analyzer objects.
+
+        codecollector may return insert_scope either as a plain string
+        ("module_body" / "class_body") or as an object like
+        {"value": "class_body", "confidence": 0.9, "reason": "..."}.
+        UI state stores only the canonical string.
+        """
+        allowed = {"module_body", "class_body"}
+        for value in values:
+            candidate = value
+            if isinstance(candidate, dict):
+                candidate = candidate.get("value")
+            if isinstance(candidate, str):
+                normalized = candidate.strip()
+                if normalized in allowed:
+                    return normalized
+        return None
+
+    def generation_block_result(self, view: ChangeRequestView, *, operation_override: str | None = None, insert_scope_override: str | None = None) -> dict[str, Any] | None:
         quality_status = self.request_quality_status(view)
         analyze = self._last_analyze_result(view)
         quality = analyze.get("request_quality") if isinstance(analyze.get("request_quality"), dict) else {}
@@ -321,6 +387,21 @@ class ChangeRequestService:
                 "recommended_action": "select_operation_and_target",
                 "selected_target": view.selected_target,
                 "requested_operation": None,
+            }
+            return {"pipeline_result": None, "result_summary": summary}
+        effective_insert_scope = insert_scope_override or self.effective_insert_scope(view)
+        if effective_operation == "insert_after_symbol" and not effective_insert_scope:
+            summary = {
+                "status": "needs_user_decision",
+                "generation_blocked": True,
+                "block_reason": "insert_scope_not_selected",
+                "message": "Область вставки не выбрана. Для добавления кода выберите область вставки: модуль или тело класса.",
+                "request_quality_status": quality_status,
+                "missing_information": ["область вставки: module_body или class_body"],
+                "recommended_action": "select_insert_scope_and_target",
+                "selected_target": view.selected_target,
+                "requested_operation": effective_operation,
+                "insert_scope": None,
             }
             return {"pipeline_result": None, "result_summary": summary}
         return None
