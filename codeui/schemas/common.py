@@ -5,6 +5,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field
 
 PatchOperation = Literal["replace_symbol", "insert_after_symbol"]
+InsertScope = Literal["module_body", "class_body"]
 
 
 class ErrorResponse(BaseModel):

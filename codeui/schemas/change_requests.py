@@ -5,7 +5,17 @@ from typing import Any
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from codeui.schemas.common import PatchOperation
+from codeui.schemas.common import InsertScope, PatchOperation
+
+
+def normalize_insert_scope_value(value: Any) -> str | None:
+    if value is None or value == "":
+        return None
+    if isinstance(value, dict):
+        return normalize_insert_scope_value(value.get("value") or value.get("insert_scope") or value.get("recommended_insert_scope"))
+    if value in {"module_body", "class_body"}:
+        return str(value)
+    return None
 
 
 class RequirementSnapshot(BaseModel):
@@ -30,6 +40,7 @@ class ChangeRequestCreate(BaseModel):
     constraints: list[str] = Field(default_factory=list)
     notes: list[str] = Field(default_factory=list)
     requested_operation: PatchOperation | None = None
+    insert_scope: InsertScope | None = None
 
     @field_validator("title", "description")
     @classmethod
@@ -46,6 +57,11 @@ class ChangeRequestCreate(BaseModel):
             return None
         stripped = str(value).strip()
         return stripped or None
+
+    @field_validator("insert_scope", mode="before")
+    @classmethod
+    def normalize_insert_scope(cls, value: Any) -> str | None:
+        return normalize_insert_scope_value(value)
 
     @model_validator(mode="after")
     def normalize_requirement_ids(self) -> "ChangeRequestCreate":
@@ -66,6 +82,7 @@ class ChangeRequestUpdate(BaseModel):
     constraints: list[str] | None = None
     notes: list[str] | None = None
     requested_operation: PatchOperation | None = None
+    insert_scope: InsertScope | None = None
     status: str | None = None
 
     @field_validator("title", "description")
@@ -88,6 +105,11 @@ class ChangeRequestUpdate(BaseModel):
             raise ValueError("Код запроса не может быть пустым")
         return stripped
 
+    @field_validator("insert_scope", mode="before")
+    @classmethod
+    def normalize_insert_scope(cls, value: Any) -> str | None:
+        return normalize_insert_scope_value(value)
+
 
 class ChangeRequestView(BaseModel):
     cr_id: str
@@ -101,6 +123,7 @@ class ChangeRequestView(BaseModel):
     constraints: list[str] = Field(default_factory=list)
     notes: list[str] = Field(default_factory=list)
     requested_operation: PatchOperation | None = None
+    insert_scope: InsertScope | None = None
     status: str = "draft"
     session_id: str | None = None
     recommended_target: str | None = None
@@ -113,6 +136,11 @@ class ChangeRequestView(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     raw: dict[str, Any] = Field(default_factory=dict)
+
+    @field_validator("insert_scope", mode="before")
+    @classmethod
+    def normalize_view_insert_scope(cls, value: Any) -> str | None:
+        return normalize_insert_scope_value(value)
 
     @model_validator(mode="before")
     @classmethod
@@ -145,15 +173,33 @@ class ChangeRequestListResponse(BaseModel):
 class AnalyzeRequest(BaseModel):
     limit: int | None = None
     operation: PatchOperation | None = None
+    insert_scope: InsertScope | None = None
+
+    @field_validator("insert_scope", mode="before")
+    @classmethod
+    def normalize_insert_scope(cls, value: Any) -> str | None:
+        return normalize_insert_scope_value(value)
 
 
 class SelectTargetRequest(BaseModel):
     selected_qualname: str
     operation: PatchOperation | None = None
+    insert_scope: InsertScope | None = None
+
+    @field_validator("insert_scope", mode="before")
+    @classmethod
+    def normalize_insert_scope(cls, value: Any) -> str | None:
+        return normalize_insert_scope_value(value)
 
 
 class GenerateRequest(BaseModel):
     selected_qualname: str | None = None
     operation: PatchOperation | None = None
+    insert_scope: InsertScope | None = None
     limit: int | None = None
     disable_vector_search: bool = False
+
+    @field_validator("insert_scope", mode="before")
+    @classmethod
+    def normalize_insert_scope(cls, value: Any) -> str | None:
+        return normalize_insert_scope_value(value)

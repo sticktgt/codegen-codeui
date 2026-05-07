@@ -93,7 +93,9 @@ def analyze_change_request(
     service: ChangeRequestService = Depends(get_change_request_service),
     client: CodeCollectorClient = Depends(get_codecollector_client),
 ) -> dict:
-    cr = service.mark_processing(cr_id, "analyzing", requested_operation=payload.operation)
+    payload_operation = getattr(payload, "operation", None)
+    payload_insert_scope = getattr(payload, "insert_scope", None)
+    cr = service.mark_processing(cr_id, "analyzing", requested_operation=payload_operation, insert_scope=payload_insert_scope)
     try:
         result = client.analyze_session(
             project_id=cr.project_id,
@@ -102,7 +104,8 @@ def analyze_change_request(
             constraints=cr.constraints,
             notes=cr.notes,
             operation=cr.requested_operation,
-            limit=payload.limit,
+            insert_scope=cr.insert_scope,
+            limit=getattr(payload, "limit", None),
         )
         updated = service.update_from_analyze_result(cr_id, result)
         return {"change_request": updated.model_dump(mode="json"), "analyze_result": result}
@@ -128,7 +131,9 @@ def select_target(
             status_code=409,
             details={"cr_id": cr_id, "request_quality_status": "insufficient"},
         )
-    operation = payload.operation or service.effective_operation(cr)
+    payload_operation = getattr(payload, "operation", None)
+    payload_insert_scope = getattr(payload, "insert_scope", None)
+    operation = payload_operation or service.effective_operation(cr)
     if not operation:
         raise ApiError(
             "OPERATION_NOT_SELECTED",
@@ -136,10 +141,18 @@ def select_target(
             status_code=409,
             details={"cr_id": cr_id},
         )
-    service.mark_processing(cr_id, "selecting_target")
+    insert_scope = payload_insert_scope or service.effective_insert_scope(cr)
+    if operation == "insert_after_symbol" and not insert_scope:
+        raise ApiError(
+            "INSERT_SCOPE_NOT_SELECTED",
+            "Область вставки не выбрана. Для добавления кода выберите область вставки.",
+            status_code=409,
+            details={"cr_id": cr_id, "operation": operation},
+        )
+    service.mark_processing(cr_id, "selecting_target", insert_scope=insert_scope)
     try:
-        result = client.select_target(session_id=cr.session_id, selected_qualname=payload.selected_qualname, operation=operation)
-        updated = service.update_from_select_result(cr_id, result, operation=operation)
+        result = client.select_target(session_id=cr.session_id, selected_qualname=payload.selected_qualname, operation=operation, insert_scope=insert_scope)
+        updated = service.update_from_select_result(cr_id, result, operation=operation, insert_scope=insert_scope)
         return {"change_request": updated.model_dump(mode="json"), "select_result": result}
     except Exception as exc:
         service.mark_failed(cr_id, error=exc, fallback_status="target_selection_failed")
@@ -154,13 +167,16 @@ def run_change_request(
     client: CodeCollectorClient = Depends(get_codecollector_client),
 ) -> dict:
     cr = service.get_change_request(cr_id)
-    block_result = service.generation_block_result(cr, operation_override=payload.operation)
+    payload_operation = getattr(payload, "operation", None)
+    payload_insert_scope = getattr(payload, "insert_scope", None)
+    block_result = service.generation_block_result(cr, operation_override=payload_operation, insert_scope_override=payload_insert_scope)
     if block_result is not None:
         updated = service.update_from_generate_result(cr_id, block_result)
         return {"change_request": updated.model_dump(mode="json"), "generate_result": block_result}
 
-    operation = payload.operation or service.effective_operation(cr)
-    selected_qualname = payload.selected_qualname or cr.selected_target or cr.recommended_target
+    operation = payload_operation or service.effective_operation(cr)
+    insert_scope = payload_insert_scope or service.effective_insert_scope(cr)
+    selected_qualname = getattr(payload, "selected_qualname", None) or cr.selected_target or cr.recommended_target
 
     # A codecollector session becomes unsuitable for a repeated generate after a
     # completed run (for example verification_failed or ready_for_merge_review).
@@ -168,7 +184,7 @@ def run_change_request(
     # CR fields, then select the known/recommended target before generation.
     reusable_session_statuses = {"analyzed", "needs_user_decision", "target_selected"}
     if not cr.session_id or cr.status not in reusable_session_statuses:
-        service.mark_processing(cr_id, "analyzing", requested_operation=operation)
+        service.mark_processing(cr_id, "analyzing", requested_operation=operation, insert_scope=insert_scope)
         try:
             analyze_result = client.analyze_session(
                 project_id=cr.project_id,
@@ -177,6 +193,7 @@ def run_change_request(
                 constraints=cr.constraints,
                 notes=cr.notes,
                 operation=operation,
+                insert_scope=insert_scope,
                 limit=None,
             )
             cr = service.update_from_analyze_result(cr_id, analyze_result)
@@ -184,7 +201,7 @@ def run_change_request(
             service.mark_failed(cr_id, error=exc, fallback_status="analysis_failed")
             raise
 
-        block_result = service.generation_block_result(cr, operation_override=operation)
+        block_result = service.generation_block_result(cr, operation_override=operation, insert_scope_override=insert_scope)
         if block_result is not None:
             updated = service.update_from_generate_result(cr_id, block_result)
             return {"change_request": updated.model_dump(mode="json"), "generate_result": block_result}
@@ -199,22 +216,30 @@ def run_change_request(
         )
 
     if cr.status != "target_selected":
-        service.mark_processing(cr_id, "selecting_target")
+        if operation == "insert_after_symbol" and not insert_scope:
+            raise ApiError(
+                "INSERT_SCOPE_NOT_SELECTED",
+                "Область вставки не выбрана. Для добавления кода выберите область вставки.",
+                status_code=409,
+                details={"cr_id": cr_id, "operation": operation},
+            )
+        service.mark_processing(cr_id, "selecting_target", insert_scope=insert_scope)
         try:
-            select_result = client.select_target(session_id=cr.session_id, selected_qualname=selected_qualname, operation=operation)
-            cr = service.update_from_select_result(cr_id, select_result, operation=operation)
+            select_result = client.select_target(session_id=cr.session_id, selected_qualname=selected_qualname, operation=operation, insert_scope=insert_scope)
+            cr = service.update_from_select_result(cr_id, select_result, operation=operation, insert_scope=insert_scope)
         except Exception as exc:
             service.mark_failed(cr_id, error=exc, fallback_status="target_selection_failed")
             raise
 
-    service.mark_processing(cr_id, "running", requested_operation=operation)
+    service.mark_processing(cr_id, "running", requested_operation=operation, insert_scope=insert_scope)
     try:
         result = client.generate_session(
             session_id=cr.session_id,
             selected_qualname=selected_qualname,
             operation=operation,
-            limit=payload.limit,
-            disable_vector_search=payload.disable_vector_search,
+            insert_scope=insert_scope,
+            limit=getattr(payload, "limit", None),
+            disable_vector_search=getattr(payload, "disable_vector_search", False),
         )
         updated = service.update_from_generate_result(cr_id, result)
         return {"change_request": updated.model_dump(mode="json"), "generate_result": result}

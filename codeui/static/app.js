@@ -50,10 +50,27 @@ async function handleResponse(response) {
     try { payload = JSON.parse(text); } catch (_) { payload = text; }
   }
   if (!response.ok) {
-    const message = payload?.error?.message || payload?.detail || text || `HTTP ${response.status}`;
-    throw new Error(message);
+    throw new Error(formatApiErrorMessage(payload, text, response.status));
   }
   return payload;
+}
+
+function formatApiErrorMessage(payload, rawText, status) {
+  if (payload?.error?.message) return String(payload.error.message);
+  if (payload?.message) return String(payload.message);
+  if (typeof payload?.detail === 'string') return payload.detail;
+  if (Array.isArray(payload?.detail)) {
+    return payload.detail.map(item => {
+      if (typeof item === 'string') return item;
+      const loc = Array.isArray(item?.loc) ? item.loc.join('.') : '';
+      const msg = item?.msg || item?.message || JSON.stringify(item);
+      return loc ? `${loc}: ${msg}` : msg;
+    }).join('\n');
+  }
+  if (payload?.detail && typeof payload.detail === 'object') return JSON.stringify(payload.detail, null, 2);
+  if (typeof payload === 'string' && payload) return payload;
+  if (rawText) return rawText;
+  return `HTTP ${status}`;
 }
 
 function $(id) { return document.getElementById(id); }
@@ -135,6 +152,28 @@ function getDetectedOperation(cr) {
   const analyze = getAnalyzeResult(cr);
   return analyze?.requested_operation || getTargetRecommendation(cr)?.recommended_operation || getAnalyzeSummary(cr)?.requested_operation || null;
 }
+function normalizeInsertScopeValue(value) {
+  if (!value) return null;
+  if (value === 'module_body' || value === 'class_body') return value;
+  if (typeof value === 'object') {
+    return normalizeInsertScopeValue(value.value || value.insert_scope || value.recommended_insert_scope);
+  }
+  return null;
+}
+function getDetectedInsertScope(cr) {
+  const analyze = getAnalyzeResult(cr) || {};
+  const summary = getAnalyzeSummary(cr) || {};
+  const recommendation = getTargetRecommendation(cr) || {};
+  const post = recommendation.post_processing || {};
+  return normalizeInsertScopeValue(analyze.insert_scope)
+    || normalizeInsertScopeValue(summary.insert_scope)
+    || normalizeInsertScopeValue(recommendation.insert_scope)
+    || normalizeInsertScopeValue(post.insert_scope)
+    || null;
+}
+function getEffectiveInsertScope(cr) {
+  return normalizeInsertScopeValue(cr?.insert_scope) || getDetectedInsertScope(cr) || null;
+}
 function getEffectiveOperation(cr) {
   if (cr?.requested_operation) return cr.requested_operation;
   const detected = getDetectedOperation(cr);
@@ -150,6 +189,14 @@ function getCurrentOperationSelection(cr) {
   }
   return cr?.requested_operation || null;
 }
+function getCurrentInsertScopeSelection(cr) {
+  const form = $('edit-cr-form');
+  if (form && cr?.cr_id === state.selectedCrId) {
+    const value = new FormData(form).get('insert_scope');
+    return normalizeInsertScopeValue(value);
+  }
+  return normalizeInsertScopeValue(cr?.insert_scope);
+}
 function getRequiredOperationForAction(cr) {
   const manual = getCurrentOperationSelection(cr) || cr?.requested_operation || null;
   if (manual) return manual;
@@ -158,8 +205,16 @@ function getRequiredOperationForAction(cr) {
   if ((detected === 'replace_symbol' || detected === 'insert_after_symbol') && source !== 'fallback') return detected;
   return null;
 }
+function getRequiredInsertScopeForAction(cr) {
+  const manual = getCurrentInsertScopeSelection(cr) || normalizeInsertScopeValue(cr?.insert_scope);
+  if (manual) return manual;
+  return getDetectedInsertScope(cr);
+}
 function getEffectiveOperationForAction(cr) {
   return getRequiredOperationForAction(cr);
+}
+function getEffectiveInsertScopeForAction(cr) {
+  return getRequiredInsertScopeForAction(cr);
 }
 function isRequestInsufficient(cr) {
   return getRequestQualityStatus(cr) === 'insufficient';
@@ -170,11 +225,15 @@ function isOperationFallback(cr) {
 function getRecommendedOrSelectedTarget(cr) {
   return cr?.selected_target || cr?.recommended_target || getTargetRecommendation(cr)?.recommended_target || null;
 }
+function hasRequiredInsertScope(cr) {
+  const operation = getRequiredOperationForAction(cr);
+  return operation !== 'insert_after_symbol' || Boolean(getRequiredInsertScopeForAction(cr));
+}
 function canSelectTargetForCr(cr) {
-  return Boolean(canWorkWithCr(cr) && cr?.session_id && !isRequestInsufficient(cr) && getRequiredOperationForAction(cr));
+  return Boolean(canWorkWithCr(cr) && cr?.session_id && !isRequestInsufficient(cr) && getRequiredOperationForAction(cr) && hasRequiredInsertScope(cr));
 }
 function canGenerateCr(cr) {
-  return Boolean(canWorkWithCr(cr) && cr?.session_id && !isRequestInsufficient(cr) && getRequiredOperationForAction(cr) && getRecommendedOrSelectedTarget(cr));
+  return Boolean(canWorkWithCr(cr) && cr?.session_id && !isRequestInsufficient(cr) && getRequiredOperationForAction(cr) && hasRequiredInsertScope(cr) && getRecommendedOrSelectedTarget(cr));
 }
 function qualityLabel(value) {
   if (value === 'processable') return 'достаточный';
@@ -194,6 +253,7 @@ function operationSourceLabel(value) {
 function targetRoleLabel(value) {
   if (value === 'target') return 'цель изменения';
   if (value === 'anchor') return 'anchor для вставки';
+  if (value === 'parent_class') return 'родительский класс';
   if (value === 'unknown') return 'не определено';
   return value || '—';
 }
@@ -467,6 +527,7 @@ function bindCreateCrForm(requirement) {
       description,
       constraints: String(data.get('constraints') || '').split('\n').map(v => v.trim()).filter(Boolean),
       requested_operation: data.get('requested_operation') || null,
+      insert_scope: data.get('insert_scope') || null,
     };
     const button = form.querySelector('button[type="submit"]');
     await withBusyButton(button, 'Создание...', async () => {
@@ -605,6 +666,19 @@ function operationLabel(value) {
   return value || '—';
 }
 
+function insertScopeLabel(value) {
+  const normalized = normalizeInsertScopeValue(value);
+  if (normalized === 'module_body') return 'добавление в модуль';
+  if (normalized === 'class_body') return 'добавление внутрь класса';
+  return '—';
+}
+
+function insertScopeHelp(value, role = '') {
+  if (value === 'class_body' || role === 'parent_class') return 'Будет добавлен новый метод внутрь выбранного класса.';
+  if (value === 'module_body' || role === 'anchor') return 'Будет добавлена новая top-level функция или класс после выбранного anchor-symbol.';
+  return '';
+}
+
 function renderCrEditForm(cr) {
   const disabled = isFinalCr(cr) || isBusyCr(cr);
   return `
@@ -618,6 +692,11 @@ function renderCrEditForm(cr) {
         <option value="replace_symbol" ${cr.requested_operation === 'replace_symbol' ? 'selected' : ''}>заменить существующий код</option>
         <option value="insert_after_symbol" ${cr.requested_operation === 'insert_after_symbol' ? 'selected' : ''}>добавить после существующего кода</option>
       </select></div>
+      <div class="form-row"><label>Область вставки</label><select name="insert_scope" ${disabled ? 'disabled' : ''}>
+        <option value="" ${!cr.insert_scope ? 'selected' : ''}>не применимо / определить при анализе</option>
+        <option value="module_body" ${cr.insert_scope === 'module_body' ? 'selected' : ''}>добавление в модуль</option>
+        <option value="class_body" ${cr.insert_scope === 'class_body' ? 'selected' : ''}>добавление внутрь класса</option>
+      </select><span class="field-hint">Используется для операции «добавить после существующего кода».</span></div>
       <div class="form-row"><label>Примечания</label><textarea name="notes" rows="2" ${disabled ? 'disabled' : ''}>${escapeHtml(linesToTextarea(cr.notes || []))}</textarea></div>
       <div class="action-row">
         <button class="btn" type="submit" ${disabled ? 'disabled' : ''}>Сохранить изменения</button>
@@ -636,8 +715,19 @@ function bindCrEditForm(cr) {
     operationSelect.addEventListener('change', () => {
       const value = operationSelect.value || null;
       cr.requested_operation = value;
+      if (value !== 'insert_after_symbol') cr.insert_scope = null;
       if (!cr.raw || typeof cr.raw !== 'object') cr.raw = {};
       cr.raw.operation_selection_source = value ? 'user' : 'none';
+      renderSelectedCr();
+    });
+  }
+  const insertScopeSelect = form.querySelector('[name="insert_scope"]');
+  if (insertScopeSelect) {
+    insertScopeSelect.addEventListener('change', () => {
+      const value = insertScopeSelect.value || null;
+      cr.insert_scope = value;
+      if (!cr.raw || typeof cr.raw !== 'object') cr.raw = {};
+      cr.raw.insert_scope_selection_source = value ? 'user' : 'none';
       renderSelectedCr();
     });
   }
@@ -660,6 +750,7 @@ function bindCrEditForm(cr) {
       constraints: linesFromTextarea(data.get('constraints')),
       notes: linesFromTextarea(data.get('notes')),
       requested_operation: data.get('requested_operation') || null,
+      insert_scope: data.get('insert_scope') || null,
     };
     const button = form.querySelector('button[type="submit"]');
     await withBusyButton(button, 'Сохранение...', async () => {
@@ -722,6 +813,7 @@ function renderOperationSummary(cr) {
       <div class="key">Режим</div><div>${escapeHtml(modeText)}</div>
       ${selectedOperation ? `<div class="key">Выбор</div><div>${escapeHtml(operationLabel(selectedOperation))}</div>` : ''}
       <div class="key">Рекомендация</div><div>${escapeHtml(recommendationText)} ${sourceForDisplay ? badge(operationSourceLabel(sourceForDisplay), sourceForDisplay === 'fallback' ? 'warn' : 'info') : ''}</div>
+      ${(selectedOperation || detected) === 'insert_after_symbol' ? `<div class="key">Область вставки</div><div>${escapeHtml(insertScopeLabel(getEffectiveInsertScope(cr)))}</div>` : ''}
       <div class="key">Уверенность</div><div>${escapeHtml(formatConfidence(confidence))}</div>
     </div>
     ${reason ? `<div class="analysis-text">${escapeHtml(reason)}</div>` : ''}
@@ -747,6 +839,7 @@ function renderTargetRecommendationSummary(cr) {
       <div class="key">Проверка</div><div>${manualReview ? statusBadge('требуется') : statusBadge('не требуется', 'ok')}</div>
     </div>
     ${recommendation.target_reason ? `<div class="analysis-text">${escapeHtml(recommendation.target_reason)}</div>` : ''}
+    ${insertScopeHelp(getEffectiveInsertScope(cr), role) ? `<div class="message compact-message">${escapeHtml(insertScopeHelp(getEffectiveInsertScope(cr), role))}</div>` : ''}
     ${post ? `<div class="message compact-message">Anchor скорректирован: ${escapeHtml(post.original_recommended_target || '—')} → ${escapeHtml(post.recommended_target || '—')}</div>` : ''}
     ${renderWarningList(recommendation.warnings || getAnalyzeResult(cr)?.warnings)}
   </div>`;
@@ -875,7 +968,9 @@ function renderManualTargetBlock(cr) {
   if (!cr.session_id) hint = 'Ручной выбор будет доступен после анализа запроса.';
   else if (isRequestInsufficient(cr)) hint = 'Запрос недостаточно конкретный. Измените запрос и выполните анализ заново.';
   else if (!getRequiredOperationForAction(cr)) hint = 'Перед ручным выбором укажите операцию.';
-  const role = getRequiredOperationForAction(cr) === 'insert_after_symbol' ? 'Anchor для вставки' : 'Место изменения';
+  else if (getRequiredOperationForAction(cr) === 'insert_after_symbol' && !getRequiredInsertScopeForAction(cr)) hint = 'Перед ручным выбором укажите область вставки.';
+  const roleValue = getTargetRecommendation(cr)?.target_role || '';
+  const role = roleValue === 'parent_class' ? 'Родительский класс' : getRequiredOperationForAction(cr) === 'insert_after_symbol' ? 'Anchor / место вставки' : 'Место изменения';
   return `
     <div class="manual-target-panel">
       <div class="form-row"><label>${escapeHtml(role)}</label><input id="manual-target-input" value="${escapeHtml(getRecommendedOrSelectedTarget(cr) || '')}" placeholder="package.module.Class.method" ${disabled ? 'disabled' : ''}></div>
@@ -925,8 +1020,10 @@ async function analyzeCr(crId, button) {
   const cr = state.changeRequests.find(item => item.cr_id === crId);
   state.busy.add(crId);
   const operation = getCurrentOperationSelection(cr);
+  const insertScope = operation === 'insert_after_symbol' ? getCurrentInsertScopeSelection(cr) : null;
   if (cr) {
     cr.requested_operation = operation;
+    cr.insert_scope = insertScope;
     clearLocalAnalyzeState(cr);
     cr.status = 'analyzing';
     renderCrList();
@@ -934,7 +1031,7 @@ async function analyzeCr(crId, button) {
   }
   let response = null;
   try {
-    response = await api.post(`/api/change-requests/${encodeURIComponent(crId)}/analyze`, { operation });
+    response = await api.post(`/api/change-requests/${encodeURIComponent(crId)}/analyze`, { operation, insert_scope: insertScope });
   } finally {
     state.busy.delete(crId);
   }
@@ -967,14 +1064,19 @@ async function selectTarget(crId, qualname, button) {
     return;
   }
   const operation = getEffectiveOperationForAction(cr);
+  const insertScope = operation === 'insert_after_symbol' ? getEffectiveInsertScopeForAction(cr) : null;
   if (!operation) {
     alert('Операция не выбрана. Заполните поле «Операция» перед выбором места изменения.');
+    return;
+  }
+  if (operation === 'insert_after_symbol' && !insertScope) {
+    alert('Область вставки не выбрана. Для добавления кода выберите область вставки.');
     return;
   }
   state.busy.add(crId);
   try {
     await withBusyButton(button, 'Выбор...', async () => {
-      await api.post(`/api/change-requests/${encodeURIComponent(crId)}/select-target`, { selected_qualname: qualname, operation });
+      await api.post(`/api/change-requests/${encodeURIComponent(crId)}/select-target`, { selected_qualname: qualname, operation, insert_scope: insertScope });
     });
   } finally {
     state.busy.delete(crId);
@@ -987,13 +1089,18 @@ async function runCr(crId, button) {
   if (!canGenerateCr(cr)) {
     if (isRequestInsufficient(cr)) alert('Генерация заблокирована: запрос недостаточно конкретный. Измените запрос и выполните анализ заново.');
     else if (!getRequiredOperationForAction(cr)) alert('Генерация заблокирована: заполните поле «Операция».');
+    else if (getRequiredOperationForAction(cr) === 'insert_after_symbol' && !getRequiredInsertScopeForAction(cr)) alert('Генерация заблокирована: выберите область вставки.');
     else if (!getRecommendedOrSelectedTarget(cr)) alert('Генерация заблокирована: не выбрано место изменения.');
     return;
   }
   state.busy.add(crId);
   try {
     await withBusyButton(button, 'Выполняется...', async () => {
-      const result = await api.post(`/api/change-requests/${encodeURIComponent(crId)}/run`, { operation: getRequiredOperationForAction(cr) });
+      const operation = getRequiredOperationForAction(cr);
+      const insertScope = operation === 'insert_after_symbol' ? getRequiredInsertScopeForAction(cr) : null;
+      const payload = { operation };
+      if (insertScope) payload.insert_scope = insertScope;
+      const result = await api.post(`/api/change-requests/${encodeURIComponent(crId)}/run`, payload);
       const blocked = result?.generate_result?.result_summary?.generation_blocked;
       if (blocked) alert(result.generate_result.result_summary.message || 'Генерация заблокирована.');
     });
@@ -1163,7 +1270,8 @@ function renderRunSummary(summary) {
     ${partialGeneratedTest ? `<div class="message warning-message"><b>Результат требует ручной проверки.</b> Основной код можно рассматривать для применения, но сгенерированный тест не прошел проверку и будет исключен из применения.</div>` : ''}
     <div class="kv-grid compact-kv">
       <div class="key">Статус</div><div>${statusBadge(summary.status)}</div>
-      <div class="key">Операция</div><div>${escapeHtml(summary.final_operation || summary.requested_operation || '—')}</div>
+      <div class="key">Операция</div><div>${escapeHtml(operationLabel(summary.final_operation || summary.requested_operation) || '—')}</div>
+      <div class="key">Область вставки</div><div>${escapeHtml(insertScopeLabel(summary.insert_scope))}</div>
       <div class="key">Место изменения</div><div class="mono-text">${escapeHtml(summary.selected_target || '—')}</div>
       <div class="key">Production-код</div><div>${productionState}</div>
       <div class="key">Generated test</div><div>${generatedTestState}</div>
@@ -1204,6 +1312,18 @@ function renderCompactList(title, values) {
   </div>`;
 }
 
+function renderImportChangesList(title, values) {
+  const items = Array.isArray(values) ? values.filter(Boolean) : [];
+  const formatted = items.map(item => {
+    if (!item || typeof item !== 'object') return String(item);
+    const action = item.action || 'import';
+    const module = item.module || '';
+    const names = Array.isArray(item.names) ? item.names.join(', ') : (item.name || '');
+    return [action, module, names].filter(Boolean).join(' ');
+  });
+  return renderCompactList(title, formatted);
+}
+
 function renderApplyPlan(summary) {
   const lines = Array.isArray(summary.merge_plan_summary_lines) ? summary.merge_plan_summary_lines : [];
   return `<div class="compact-section">
@@ -1217,6 +1337,7 @@ function renderApplyPlan(summary) {
       ${renderCompactList('Файлы к применению', summary.changed_files)}
       ${renderCompactList('Исключены из применения', summary.excluded_files)}
       ${renderCompactList('Символы', summary.symbols_in_changed_files)}
+      ${renderImportChangesList('Добавленные импорты', summary.import_changes)}
       ${renderCompactList('Связанные требования', summary.linked_requirements)}
       ${renderCompactList('Рекомендуемые проверки', summary.recommended_test_commands)}
     </div>
@@ -1338,7 +1459,8 @@ function renderArtifact(artifact, kind, summary = null) {
   const testNote = kind === 'test' && summary && (summary.generated_test_failed || summary.generated_test_verification_failed || summary.generated_test_merge_recommended === false)
     ? `<div class="message warning-message">Сгенерированный тест создан, но не рекомендован к применению.${renderCompactList('Исключенные test-файлы', summary.generated_test_excluded_files || summary.excluded_files || [])}</div>`
     : '';
-  return `${testNote}${source ? codeBlock(source) : ''}<details><summary>План и метрики</summary>${jsonBlock({ planner_result: artifact.planner_result, llm_usage: artifact.llm_usage, warnings: artifact.warnings })}</details>`;
+  const importChanges = kind === 'code' && artifact.artifact?.import_changes ? renderImportChangesList('Добавленные импорты', artifact.artifact.import_changes) : '';
+  return `${testNote}${importChanges}${source ? codeBlock(source) : ''}<details><summary>План и метрики</summary>${jsonBlock({ planner_result: artifact.planner_result, llm_usage: artifact.llm_usage, warnings: artifact.warnings })}</details>`;
 }
 
 function bindTabs(root) {
