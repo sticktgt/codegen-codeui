@@ -47,6 +47,26 @@ class CodeCollectorClient:
                 command.extend(["--reference-library-path", item])
         return self._run_json(command)
 
+    def onboard_project(
+        self,
+        *,
+        input_root: str,
+        project_name: str,
+        full: bool = True,
+        skip_architecture_enrichment: bool = False,
+    ) -> dict[str, Any]:
+        command = ["projects", "onboard", "--input-root", input_root, "--project-name", project_name]
+        if full:
+            command.append("--full")
+        if skip_architecture_enrichment:
+            command.append("--skip-architecture-enrichment")
+        payload = self._run_json(command, allow_nonzero_json=True)
+        return payload if isinstance(payload, dict) else {"status": "failed", "message": "Unexpected codecollector response", "raw": payload}
+
+    def delete_project(self, project_id: str) -> dict[str, Any]:
+        payload = self._run_json(["projects", "delete", "--project-id", project_id], allow_nonzero_json=True)
+        return payload if isinstance(payload, dict) else {"status": "failed", "message": "Unexpected codecollector response", "raw": payload}
+
     def sessions_list(self) -> Any:
         return self._run_json(["sessions", "list"])
 
@@ -104,6 +124,8 @@ class CodeCollectorClient:
             command.extend(["--selected-qualname", selected_qualname])
         if operation:
             command.extend(["--operation", operation])
+        if insert_scope and operation != "replace_symbol":
+            command.extend(["--insert-scope", insert_scope])
         if limit is not None:
             command.extend(["--limit", str(limit)])
         if disable_vector_search:
@@ -113,9 +135,27 @@ class CodeCollectorClient:
     def workspace_apply(self, workspace_id: str) -> Any:
         return self._run_json(["workspaces", "apply", "--workspace-id", workspace_id])
 
-    def _run_json(self, args: list[str]) -> Any:
+    def _run_json(self, args: list[str], *, allow_nonzero_json: bool = False) -> Any:
         command = [self._settings.codecollector.python, "-m", self._settings.codecollector.module, *args]
-        result = self._runner.run(command, cwd=self._settings.codecollector_root)
+        result = self._runner.run(command, cwd=self._settings.codecollector_root, check_returncode=not allow_nonzero_json)
         payload = extract_json_from_stdout(result.stdout)
-        LOGGER.debug("codecollector command parsed JSON type=%s args=%s", type(payload).__name__, args)
+        if allow_nonzero_json and isinstance(payload, dict) and result.returncode != 0:
+            payload.setdefault("status", "failed")
+            payload.setdefault("error_type", "CodeCollectorCommandFailed")
+            payload.setdefault("message", "codecollector command failed")
+            payload.setdefault("_codeui_command", {})
+            payload["_codeui_command"].update(
+                {
+                    "returncode": result.returncode,
+                    "duration_sec": result.duration_sec,
+                    "stderr_tail": result.stderr[-4000:],
+                    "stdout_tail": result.stdout[-4000:],
+                }
+            )
+        LOGGER.debug(
+            "codecollector command parsed JSON type=%s returncode=%s args=%s",
+            type(payload).__name__,
+            result.returncode,
+            args,
+        )
         return payload

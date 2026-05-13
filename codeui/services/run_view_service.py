@@ -95,27 +95,46 @@ class RunViewService:
         )
 
         generation_result = self._artifacts.read_optional_json(run_id, "generation_result.json") or {}
-        code_artifact = self._dict(generation_result.get("code_artifact"))
+        repair_result = self._artifacts.read_optional_json(run_id, "repair_result.json") or {}
+        generation_code_artifact = self._dict(generation_result.get("code_artifact"))
+        repair_code_artifact = self._dict(repair_result.get("code_artifact"))
+        apply_result = self._dict(payload.get("apply_result"))
+        apply_artifact = self._dict(apply_result.get("artifact"))
+        code_artifact = repair_code_artifact or generation_code_artifact or apply_artifact
         import_changes = self._list(
             result_summary.get("import_changes")
             or execution.get("import_changes")
-            or self._dict(payload.get("apply_result")).get("import_changes")
+            or apply_result.get("import_changes")
+            or apply_artifact.get("import_changes")
             or code_artifact.get("import_changes")
         )
-        insert_scope = (
-            result_summary.get("insert_scope")
-            or execution.get("insert_scope")
-            or payload.get("insert_scope")
-            or code_artifact.get("insert_scope")
+        insert_scope = self._normalize_insert_scope(
+            result_summary.get("insert_scope"),
+            execution.get("insert_scope"),
+            payload.get("insert_scope"),
+            apply_artifact.get("insert_scope"),
+            code_artifact.get("insert_scope"),
         )
+        requested_operation = execution.get("requested_operation") or result_summary.get("requested_operation") or payload.get("requested_operation") or code_artifact.get("operation")
+        final_operation = execution.get("final_operation") or result_summary.get("final_operation") or requested_operation
+        parent_qualname = result_summary.get("parent_qualname") or execution.get("parent_qualname") or apply_artifact.get("parent_qualname") or code_artifact.get("parent_qualname")
+        expected_new_symbol_kind = result_summary.get("expected_new_symbol_kind") or execution.get("expected_new_symbol_kind") or apply_artifact.get("expected_new_symbol_kind") or code_artifact.get("expected_new_symbol_kind")
+        target_role = result_summary.get("target_role") or execution.get("target_role") or self._infer_target_role(final_operation, insert_scope, parent_qualname)
+        repair_generation = self._dict(payload.get("repair_generation"))
+        repair_summary = self._dict_or_none(repair_generation.get("result_summary"))
+        run_artifacts = self._run_artifacts_summary(payload, generation_result, repair_result)
 
         return RunSummaryView(
             run_id=str(payload.get("run_id") or run_id),
             run_label=payload.get("run_label"),
+            run_dir=payload.get("run_dir"),
             status=execution.get("status") or result_summary.get("status") or verification.get("verdict") or self._status_from_steps(payload),
             selected_target=execution.get("selected_target") or result_summary.get("selected_target") or payload.get("selected_target"),
-            requested_operation=execution.get("requested_operation") or result_summary.get("requested_operation") or payload.get("requested_operation"),
-            final_operation=execution.get("final_operation") or execution.get("requested_operation") or result_summary.get("requested_operation") or payload.get("requested_operation"),
+            target_role=target_role,
+            parent_qualname=parent_qualname,
+            expected_new_symbol_kind=expected_new_symbol_kind,
+            requested_operation=requested_operation,
+            final_operation=final_operation,
             insert_scope=insert_scope,
             import_changes=import_changes,
             changed_files=changed_files,
@@ -132,7 +151,8 @@ class RunViewService:
             generated_test_excluded_files=self._unique_list(self._list(verification_summary.get("generated_test_excluded_files")) + self._list(generated_test_apply.get("excluded_files"))),
             production_failed=verification_summary.get("production_failed") if "production_failed" in verification_summary else None,
             generated_test_failed=verification_summary.get("generated_test_failed") if "generated_test_failed" in verification_summary else None,
-            repair_used=bool(execution.get("repair_used") or self._dict(payload.get("repair_generation"))),
+            repair_used=bool(execution.get("repair_used") or repair_generation),
+            repair_summary=repair_summary,
             merge_mode=execution.get("merge_mode") or merge_plan.get("mode"),
             merge_ready=merge_ready,
             linked_requirements=self._list(execution.get("linked_requirements") or merge_plan.get("linked_requirements")),
@@ -144,6 +164,8 @@ class RunViewService:
             embedding_usage=self._dict_or_none(execution.get("embedding_usage")),
             primary_issue=self._primary_issue(verification),
             merge_plan_summary_lines=self._list(merge_plan.get("summary_lines")),
+            generated_test_apply=generated_test_apply if generated_test_apply else None,
+            run_artifacts=run_artifacts,
             warnings=self._list(payload.get("warnings")),
         )
 
@@ -202,17 +224,32 @@ class RunViewService:
         return DiffView(changed_files=changed_files, excluded_files=summary.excluded_files, unified_diff=unified_diff)
 
     def code_artifact(self, run_id: str) -> ArtifactView:
-        payload = self._artifacts.read_optional_json(run_id, "generation_result.json")
-        if not payload:
-            return ArtifactView(exists=False)
-        return ArtifactView(
-            exists=True,
-            artifact=self._dict_or_none(payload.get("code_artifact")),
-            planner_result=self._dict_or_none(payload.get("planner_result")),
-            llm_usage=self._dict_or_none(payload.get("llm_usage")),
-            warnings=self._list(payload.get("warnings")),
-            raw=payload,
-        )
+        generation_payload = self._artifacts.read_optional_json(run_id, "generation_result.json") or {}
+        repair_payload = self._artifacts.read_optional_json(run_id, "repair_result.json") or {}
+
+        repair_artifact = self._dict_or_none(repair_payload.get("code_artifact"))
+        generation_artifact = self._dict_or_none(generation_payload.get("code_artifact"))
+        if repair_artifact:
+            return ArtifactView(
+                exists=True,
+                source="repair_result",
+                artifact=repair_artifact,
+                planner_result=self._dict_or_none(repair_payload.get("planner_result")) or self._dict_or_none(repair_payload.get("repair_planner_result")),
+                llm_usage=self._dict_or_none(repair_payload.get("llm_usage")),
+                warnings=self._list(repair_payload.get("warnings")),
+                raw={"final_result": repair_payload, "primary_generation_result": generation_payload or None},
+            )
+        if generation_artifact:
+            return ArtifactView(
+                exists=True,
+                source="generation_result",
+                artifact=generation_artifact,
+                planner_result=self._dict_or_none(generation_payload.get("planner_result")),
+                llm_usage=self._dict_or_none(generation_payload.get("llm_usage")),
+                warnings=self._list(generation_payload.get("warnings")),
+                raw=generation_payload,
+            )
+        return ArtifactView(exists=False)
 
     def test_artifact(self, run_id: str) -> ArtifactView:
         payload = self._artifacts.read_optional_json(run_id, "generation_test_result.json")
@@ -365,6 +402,57 @@ class RunViewService:
                 current_file = line[4:].strip()
         flush()
         return "".join(result)
+
+
+    @classmethod
+    def _normalize_insert_scope(cls, *values: Any) -> str | None:
+        for value in values:
+            if value in {"module_body", "class_body"}:
+                return str(value)
+            if isinstance(value, dict):
+                nested = cls._normalize_insert_scope(value.get("value"), value.get("insert_scope"), value.get("recommended_insert_scope"))
+                if nested:
+                    return nested
+        return None
+
+    @staticmethod
+    def _infer_target_role(operation: Any, insert_scope: Any, parent_qualname: Any) -> str | None:
+        if operation == "replace_symbol":
+            return "target"
+        if operation == "insert_after_symbol" and insert_scope == "class_body":
+            return "parent_class" if parent_qualname else "parent_class"
+        if operation == "insert_after_symbol":
+            return "anchor"
+        return None
+
+    def _run_artifacts_summary(self, payload: dict[str, Any], generation_result: dict[str, Any], repair_result: dict[str, Any]) -> dict[str, Any]:
+        def external_summary(name: str) -> dict[str, Any] | None:
+            item = self._dict(payload.get(name))
+            if not item:
+                return None
+            return {
+                "mode": item.get("mode"),
+                "request_path": item.get("request_path"),
+                "result_path": item.get("result_path"),
+                "trace_path": item.get("trace_path"),
+                "status": self._dict(item.get("result_summary")).get("status"),
+                "error_type": self._dict(item.get("result_summary")).get("error_type"),
+                "message": self._dict(item.get("result_summary")).get("message"),
+            }
+
+        result = {
+            "run_dir": payload.get("run_dir"),
+            "external_code_generation": external_summary("external_code_generation"),
+            "external_test_generation": external_summary("external_test_generation"),
+            "repair_generation": external_summary("repair_generation"),
+        }
+        if generation_result:
+            result["generation_result_status"] = generation_result.get("status")
+            result["generation_trace_path"] = generation_result.get("trace_path")
+        if repair_result:
+            result["repair_result_status"] = repair_result.get("status")
+            result["repair_trace_path"] = repair_result.get("trace_path")
+        return {key: value for key, value in result.items() if value}
 
     @staticmethod
     def _created_at_from_run_id(run_id: str) -> str | None:

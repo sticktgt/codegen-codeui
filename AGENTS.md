@@ -428,6 +428,22 @@ Generate запускает `sessions generate` в `codecollector`.
 
 Для `block_reason = session_not_ready` UI показывает, что сессия не готова к генерации и нужно выбрать target/anchor/parent class или выполнить analyze заново.
 
+## Отображение актуальных ответов codecollector
+
+При работе с текущими ответами codecollector агент должен учитывать:
+
+- `insert_scope` может приходить строкой или объектом с полем `value`; в состоянии codeui хранится только каноническая строка `module_body` или `class_body`;
+- `target_role` не подменяет operation: `target`, `anchor`, `parent_class` и `unknown` отображаются отдельно;
+- для `insert_after_symbol + class_body` выбранный symbol обычно является родительским классом;
+- `generation_blocked=true` является бизнес-ответом, а не технической ошибкой;
+- `generated_test_verification_failed` не означает автоматическую поломку production-кода;
+- `generated_test_apply.skipped=false` означает применение теста в staging workspace для проверки, а не обязательное применение теста в основной проект;
+- `merge_plan.ready_for_manual_merge_review` и `result_summary.merge_ready` являются основными признаками готовности результата к ручному review/apply;
+- `excluded_files` нужно показывать отдельно и не считать ошибкой применения;
+- verification blocks нужно группировать на production checks и generated test checks;
+- `repair_generation.result_summary` нужно показывать при `repair_used=true`;
+- import changes не требуют отдельного пользовательского действия и отображаются как часть code artifact/diff/apply plan.
+
 ## Run artifacts
 
 `codeui` читает результаты из `.runs` проекта `codecollector`:
@@ -639,6 +655,16 @@ python -m compileall codeui
 ```bash
 node --check codeui/static/app.js
 ```
+
+## Текущие проблемы и направления изменений
+
+Для следующих доработок актуальны:
+
+- более удобное отображение больших verification details;
+- отдельный безопасный сценарий удаления CR вместе с run/workspace artifacts;
+- выбор target/anchor из полного индекса проекта;
+- расширение UI для reference artifacts;
+- отдельный workflow анализа runtime traceback или описания ошибки запуска проекта.
 
 ## Ограничения
 

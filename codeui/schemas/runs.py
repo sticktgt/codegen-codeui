@@ -56,8 +56,12 @@ class CheckView(BaseModel):
 class RunSummaryView(BaseModel):
     run_id: str
     run_label: str | None = None
+    run_dir: str | None = None
     status: str | None = None
     selected_target: str | None = None
+    target_role: str | None = None
+    parent_qualname: str | None = None
+    expected_new_symbol_kind: str | None = None
     requested_operation: str | None = None
     final_operation: str | None = None
     insert_scope: str | None = None
@@ -77,6 +81,7 @@ class RunSummaryView(BaseModel):
     production_failed: bool | None = None
     generated_test_failed: bool | None = None
     repair_used: bool = False
+    repair_summary: dict[str, Any] | None = None
     merge_mode: str | None = None
     merge_ready: bool | None = None
     linked_requirements: list[str] = Field(default_factory=list)
@@ -88,6 +93,8 @@ class RunSummaryView(BaseModel):
     embedding_usage: dict[str, Any] | None = None
     primary_issue: dict[str, Any] | None = None
     merge_plan_summary_lines: list[str] = Field(default_factory=list)
+    generated_test_apply: dict[str, Any] | None = None
+    run_artifacts: dict[str, Any] = Field(default_factory=dict)
     warnings: list[Any] = Field(default_factory=list)
 
 
@@ -99,6 +106,7 @@ class DiffView(BaseModel):
 
 class ArtifactView(BaseModel):
     exists: bool
+    source: str | None = None
     artifact: dict[str, Any] | None = None
     planner_result: dict[str, Any] | None = None
     llm_usage: dict[str, Any] | None = None

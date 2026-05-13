@@ -21,22 +21,20 @@
     <div class="field-row compact">
       <label>Проект</label>
       <select id="project-select"></select>
-      <button class="btn small" id="select-project-btn">Выбрать</button>
-      <button class="btn small" id="refresh-projects-btn">Обновить</button>
       <button class="btn small" id="show-register-project-btn">Добавить проект</button>
+      <button class="btn small danger" id="delete-project-btn">Удалить проект</button>
     </div>
     <div class="project-path" id="project-path">Проект не выбран</div>
     <div class="inline-form hidden" id="register-project-panel">
       <form id="register-project-form" class="project-register-form">
-        <div class="form-row compact-field"><label>Путь</label><input name="project_root" required placeholder="/home/stickt/llm/my_project"></div>
-        <div class="form-row compact-field"><label>Название</label><input name="project_name" placeholder="опционально"></div>
-        <div class="form-row compact-field small-field"><label>Языки</label><input name="languages" value="python" placeholder="python, javascript"></div>
-        <div class="form-row compact-field"><label>Проверки</label><textarea name="verification_commands" rows="2" placeholder="по одной команде на строку"></textarea></div>
-        <div class="form-row compact-field"><label>Исключения индекса</label><textarea name="index_excludes" rows="2" placeholder="по одному шаблону на строку"></textarea></div>
-        <div class="form-row compact-field"><label>Reference paths</label><textarea name="reference_library_paths" rows="2" placeholder="по одному пути на строку"></textarea></div>
-        <div class="action-row compact-action"><button class="btn small" type="submit">Зарегистрировать</button></div>
+        <div class="form-row compact-field"><label>Путь к root-папке</label><input name="input_root" required placeholder="/home/stickt/llm/my_project"></div>
+        <div class="form-row compact-field"><label>Название</label><input name="project_name" required placeholder="example_project"></div>
+        <label class="checkbox-row compact-field"><input type="checkbox" name="full" checked> Полный rebuild индекса</label>
+        <label class="checkbox-row compact-field"><input type="checkbox" name="skip_architecture_enrichment"> Пропустить LLM enrichment архитектуры</label>
+        <div class="action-row compact-action"><button class="btn small primary" type="submit">Добавить проект</button></div>
       </form>
     </div>
+    <div id="project-action-result" class="project-action-result hidden"></div>
   </section>
 
   <main class="layout">

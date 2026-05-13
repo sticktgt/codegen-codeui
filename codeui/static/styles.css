@@ -579,3 +579,45 @@ details summary {
   border-radius: 6px;
   padding: 7px 8px;
 }
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.checkbox-row input { width: auto; }
+.project-action-result {
+  grid-column: 1 / -1;
+  margin-top: 8px;
+}
+.project-result-card {
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius);
+  padding: 9px;
+  background: #fff;
+}
+.project-result-card.ok-card { border-color: #abefc6; background: #f6fef9; }
+.project-result-card.warn-card { border-color: #fedf89; background: #fffcf5; }
+.project-result-card.err-card { border-color: #fecdca; background: #fffbfa; }
+.project-result-title {
+  font-weight: 700;
+  margin-bottom: 7px;
+}
+.project-name { font-weight: 700; }
+
+.project-meta-label { font-weight: 700; color: var(--text); }
+.project-result-collapsed > summary { cursor: pointer; list-style-position: inside; }
+.project-result-collapsed .inline-title { margin-bottom: 0; }
+.project-result-body { margin-top: 8px; }
+.error-message { color: var(--danger); }
+.warning-message { color: var(--warn); }
+.context-bar .project-action-result { flex: 1 0 100%; }
+.related-other-projects {
+  margin-top: 8px;
+}
+.muted-list-item {
+  background: #f9fafb;
+  border-style: dashed;
+}

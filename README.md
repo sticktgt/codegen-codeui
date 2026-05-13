@@ -21,13 +21,15 @@
 
 ## Текущий функционал
 
-- Выбор проекта из списка проектов, зарегистрированных в `codecollector`.
-- Регистрация нового проекта через `codecollector`.
+- Выбор проекта из списка проектов, зарегистрированных в `codecollector`; выбранное значение сохраняется при изменении списка.
+- Добавление нового проекта через onboarding `codecollector projects onboard`.
 - Сохранение выбранного проекта в UI-состоянии.
+- Удаление проекта через `codecollector projects delete` после подтверждения пользователя.
 - Подключение JSON-файла требований.
 - Отображение требований иерархически по `parent_id`.
 - Просмотр выбранного требования.
 - Создание CR, связанного с одним или несколькими требованиями.
+- Фильтрация списка CR по активному проекту `codecollector`.
 - Хранение snapshot требований внутри CR.
 - Короткий код CR вида `CR-000001`.
 - Редактирование CR до применения результата к основному проекту.
@@ -41,10 +43,12 @@
 - Хранение связи CR с запусками pipeline.
 - Просмотр запусков, связанных с выбранным CR.
 - Просмотр общего списка запусков с ограничением по умолчанию и возможностью загрузить весь список.
-- Просмотр результата запуска: summary, шаги, проверки, план применения, статистика, diff, код, тест.
+- Фильтрация списка запусков по активному проекту через связь `CR.run_ids` / `CR.last_run_id`.
+- Просмотр результата запуска: summary, шаги, проверки, план применения, статистика, diff, финальный production-код, тест.
 - Отображение import changes, если они есть в code artifact или summary запуска.
 - Отображение generated test, его статуса и excluded files.
 - Отображение ошибок проверок с кодом, сообщением, файлом, символом и раскрываемыми деталями.
+- Отображение финального production artifact после repair, если repair использовался.
 - Применение последнего результата CR к основному проекту.
 
 ## Структура проекта
@@ -117,7 +121,7 @@ codeui/
 - `codeui/dependencies.py` — создание и передача сервисов в API routes.
 - `codeui/logger.py` — настройка логирования.
 - `codeui/api/routes_change_requests.py` — API для CR, analyze, select-target, run и apply.
-- `codeui/api/routes_projects.py` — API для чтения и регистрации проектов через `codecollector`.
+- `codeui/api/routes_projects.py` — API для чтения, onboarding и удаления проектов через `codecollector`.
 - `codeui/api/routes_requirements.py` — API для чтения требований и дерева требований.
 - `codeui/api/routes_runs.py` — API для просмотра run artifacts.
 - `codeui/api/routes_ui_state.py` — API для текущего состояния UI.
@@ -155,7 +159,7 @@ codeui/
 ```yaml
 app:
   name: "codeui"
-  version: "0.2"
+  version: "0.2.24"
 
 server:
   host: "127.0.0.1"
@@ -245,7 +249,7 @@ ui:
 - `tags`;
 - `user_roles`.
 
-Если требование связано с CR, UI показывает связанные запросы и их актуальные статусы.
+Если требование связано с CR, UI показывает связанные запросы и их актуальные статусы. При выбранном активном проекте основной список связанных CR показывает только запросы этого проекта. Если у видимого требования есть CR из других проектов, UI показывает отдельный раскрываемый блок с предупреждением, чтобы пользователь не смешивал работу по разным проектам.
 
 ## Запрос на изменение
 
@@ -317,6 +321,12 @@ CR хранится как JSON-файл в `data/change_requests/`.
 Только `applied` считается финальным статусом. Для `applied` запрещены analyze, select target, run, edit, delete и повторный apply.
 
 `ready_for_merge_review` не является финальным статусом. Из этого состояния можно изменить CR и выполнить обработку заново.
+
+Список CR в UI фильтруется по выбранному проекту `codecollector`. Если проект не выбран, отображаются все CR. Фильтр использует поле `project_id` CR и не зависит от `project_id` внутри файла требований.
+
+## Запуски
+
+Список запусков фильтруется по активному проекту через CR, с которыми связаны run artifacts. `codeui` не пытается определять проект по содержимому run directory. Если запуск создан вне `codeui` и не связан ни с одним CR, он отображается в общем списке без выбранного проекта или открывается напрямую из известной ссылки/CR, но не используется для проектного фильтра.
 
 ## Analyze
 
@@ -560,6 +570,9 @@ UI показывает:
 - selected target;
 - operation;
 - insert scope;
+- роль места изменения;
+- parent class, если добавляется метод внутрь класса;
+- expected new symbol kind;
 - workspace path;
 - changed files;
 - symbols in changed files;
@@ -568,7 +581,10 @@ UI показывает:
 - repair used;
 - merge ready;
 - excluded files;
-- plan summary lines.
+- plan summary lines;
+- пути run artifacts, trace, request/result внешних вызовов, если они есть.
+
+Если production artifact был исправлен через repair, вкладка “Код” показывает финальный `repair_result.code_artifact`, а primary `generation_result` остается доступен в raw details.
 
 ## Import changes
 
@@ -634,6 +650,13 @@ UI показывает:
 
 Если `ok = false`, issues выводятся крупно и понятно. Элементы `issues` могут быть объектами, поэтому их нельзя выводить как строку через `join`. Для issue показываются `code`, `severity`, `message`, `file_path`, `symbol`.
 
+В интерфейсе проверки разделяются на группы:
+
+- production checks — проверки production-кода и обязательных runtime-проверок;
+- generated test checks — проверки сгенерированного теста и pytest-падения, относящиеся только к generated test.
+
+Если статус запуска `generated_test_verification_failed`, UI показывает, что production-код можно рассматривать отдельно, а проблема относится к generated test.
+
 ## Generated test
 
 Если `has_generated_test = true`, UI показывает:
@@ -653,6 +676,20 @@ UI показывает:
 - apply разрешается только если merge plan готов к ручному применению.
 
 Если test generation не вернул artifact, UI показывает warning, а не считает это обычной ситуацией “тестов нет”.
+
+`generated_test_apply` отображается отдельно. Поддерживаются поля:
+
+- `applied_tests`;
+- `count`;
+- `skipped`;
+- `reason`;
+- `message`;
+- `verification_failed`;
+- `merge_recommended`;
+- `excluded_files`;
+- `candidate_test_files`.
+
+`skipped=false` означает, что тест применялся в staging workspace для проверки. Это не означает, что тест будет применен в основной проект. Решение о применении определяется через `merge_recommended`, `excluded_files` и `merge_plan`.
 
 ## Статистика
 
@@ -716,6 +753,9 @@ POST /api/ui-state/select-project
 POST /api/ui-state/requirements-file
 
 GET  /api/projects
+POST /api/projects/onboard
+POST /api/projects/delete
+DELETE /api/projects/{project_id}
 POST /api/projects/register
 
 GET  /api/requirements
@@ -800,15 +840,36 @@ curl -X POST http://127.0.0.1:8088/api/ui-state/requirements-file \
 curl http://127.0.0.1:8088/api/projects
 ```
 
+Подключение проекта выполняется через onboarding в `codecollector`. `input_root` — верхняя папка проекта, внутри которой ожидается `src/` и опционально `ARCHITECT.md` или `ARCHITECTURE.md`. `codeui` не индексирует проект и не читает architecture/knowledge-файлы самостоятельно.
+
 ```bash
-curl -X POST http://127.0.0.1:8088/api/projects/register \
+curl -X POST http://127.0.0.1:8088/api/projects/onboard \
   -H 'Content-Type: application/json' \
   -d '{
-    "project_name": "sample_python_app",
-    "project_root": "/home/stickt/llm/codecollector/demo_projects/sample_python_app",
-    "languages": ["python"]
+    "project_name": "example_project",
+    "input_root": "/home/stickt/llm/example_project",
+    "full": true,
+    "skip_architecture_enrichment": false
   }'
 ```
+
+Успешный ответ возвращается как `{ "ok": true, "result": ... }`. В UI успешное добавление и успешное удаление показываются одной строкой с раскрываемым компактным описанием без raw JSON. Контролируемая ошибка `codecollector`, например уже подключенный `project_root` или ошибка enrichment, возвращается как `{ "ok": false, ... }` без HTML traceback. Для ошибок UI показывает краткое бизнес-сообщение и раскрываемые технические детали.
+
+Удаление проекта:
+
+```bash
+curl -X POST http://127.0.0.1:8088/api/projects/delete \
+  -H 'Content-Type: application/json' \
+  -d '{"project_id": "proj-..."}'
+```
+
+Также доступен endpoint:
+
+```bash
+curl -X DELETE http://127.0.0.1:8088/api/projects/proj-...
+```
+
+Endpoint `POST /api/projects/register` оставлен как низкоуровневый wrapper старой команды `projects register`, но основной пользовательский сценарий подключения нового проекта в UI использует `/api/projects/onboard`.
 
 ### Требования
 
@@ -933,7 +994,7 @@ curl http://127.0.0.1:8088/api/runs/pipeline-.../raw
 }
 ```
 
-Не логируются целиком большие JSON, diff, исходный код, prompt или raw output. Вместо этого логируются размеры, пути и короткие summary.
+Не логируются целиком большие JSON, diff, исходный код, prompt или raw output. Вместо этого логируются размеры, пути и короткие summary. Для операций onboarding/delete проекта логируется краткий статус ответа `codecollector`; подробности controlled errors доступны пользователю в раскрываемых технических деталях.
 
 ## Запуск
 
@@ -964,6 +1025,17 @@ python -m compileall codeui
 ```bash
 node --check codeui/static/app.js
 ```
+
+## Текущие проблемы и направления дальнейших изменений
+
+Текущие задачи развития UI:
+
+- уточнить отображение unknown-статусов и новых полей codecollector без изменения backend-логики;
+- добавить более удобное раскрытие больших verification details;
+- добавить отдельное действие очистки CR вместе с техническими артефактами после отдельного подтверждения пользователя;
+- улучшить выбор места изменения из полного индекса проекта;
+- добавить отдельное представление reference library и используемых reference artifacts;
+- расширить поддержку runtime-error workflow, когда пользователь передает traceback или описание ошибки запуска проекта.
 
 ## Ограничения текущего состояния
 

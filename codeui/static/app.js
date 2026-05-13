@@ -11,6 +11,7 @@ const state = {
   busy: new Set(),
   runsAllLoaded: false,
   defaultRunsLimit: 50,
+  projectActionResult: null,
 };
 
 const FINAL_CR_STATUSES = new Set(['applied']);
@@ -118,6 +119,40 @@ function linesToTextarea(values) {
 }
 function findCrForRun(runId) {
   return state.changeRequests.find(cr => (cr.run_ids || []).includes(runId) || cr.last_run_id === runId) || null;
+}
+function getSelectedProjectId() {
+  return state.uiState?.selected_project_id || '';
+}
+function crMatchesSelectedProject(cr) {
+  const projectId = getSelectedProjectId();
+  return !projectId || cr?.project_id === projectId;
+}
+function getVisibleChangeRequests() {
+  return state.changeRequests.filter(crMatchesSelectedProject);
+}
+function getVisibleRuns() {
+  const projectId = getSelectedProjectId();
+  if (!projectId) return state.runs;
+  const visibleRunIds = new Set();
+  getVisibleChangeRequests().forEach(cr => {
+    (cr.run_ids || []).forEach(runId => visibleRunIds.add(runId));
+    if (cr.last_run_id) visibleRunIds.add(cr.last_run_id);
+  });
+  return state.runs.filter(run => visibleRunIds.has(run.run_id));
+}
+function getProjectTitleById(projectId) {
+  const project = state.projects.find(item => item.project_id === projectId);
+  return project?.project_name || project?.name || projectId || '—';
+}
+function resetProjectScopedSelection() {
+  const selectedCr = state.changeRequests.find(item => item.cr_id === state.selectedCrId);
+  if (selectedCr && !crMatchesSelectedProject(selectedCr)) {
+    state.selectedCrId = null;
+    if (state.uiState) state.uiState.selected_change_request_id = null;
+  }
+  if (state.selectedRunId && !getVisibleRuns().some(run => run.run_id === state.selectedRunId)) {
+    state.selectedRunId = null;
+  }
 }
 function crHasPipelineState(cr) {
   return Boolean(cr?.session_id || cr?.recommended_target || cr?.selected_target || cr?.last_run_id || (cr?.run_ids || []).length);
@@ -257,6 +292,31 @@ function targetRoleLabel(value) {
   if (value === 'unknown') return 'не определено';
   return value || '—';
 }
+
+function effectiveTargetRoleForAnalyze(cr) {
+  const recommendation = getTargetRecommendation(cr) || {};
+  const operation = getEffectiveOperation(cr) || getDetectedOperation(cr);
+  const scope = getEffectiveInsertScope(cr) || getDetectedInsertScope(cr);
+  const role = recommendation.target_role || '';
+  if (role === 'parent_class') return 'parent_class';
+  if (operation === 'replace_symbol') return 'target';
+  if (operation === 'insert_after_symbol' && scope === 'class_body') return 'parent_class';
+  if (operation === 'insert_after_symbol' && scope === 'module_body') return role || 'anchor';
+  return role || 'unknown';
+}
+
+function roleBadgeKind(role) {
+  if (role === 'target') return 'ok';
+  if (role === 'anchor' || role === 'parent_class') return 'blue';
+  return 'warn';
+}
+
+function targetRoleHelp(role) {
+  if (role === 'target') return 'Выбранный символ будет заменен.';
+  if (role === 'anchor') return 'Новый top-level symbol будет вставлен после выбранного anchor-symbol.';
+  if (role === 'parent_class') return 'Новый метод будет добавлен внутрь выбранного класса.';
+  return 'Роль места изменения не определена.';
+}
 function formatConfidence(value) {
   if (value == null || value === '') return '—';
   const num = Number(value);
@@ -290,10 +350,10 @@ function setActiveView(viewId) {
 }
 
 function bindToolbar() {
-  $('select-project-btn').addEventListener('click', selectProjectFromDropdown);
-  $('refresh-projects-btn').addEventListener('click', async () => { await loadProjects(); renderProjectPanel(); });
+  $('project-select').addEventListener('change', selectProjectFromDropdown);
   $('show-register-project-btn').addEventListener('click', toggleProjectRegisterForm);
-  $('register-project-form').addEventListener('submit', registerProject);
+  $('register-project-form').addEventListener('submit', onboardProject);
+  $('delete-project-btn').addEventListener('click', deleteSelectedProject);
   $('set-requirements-path-btn').addEventListener('click', setRequirementsPath);
   $('reload-requirements-btn').addEventListener('click', async () => { await loadRequirements(); renderRequirements(); });
   $('refresh-runs-btn').addEventListener('click', async () => { await loadRuns({ all: state.runsAllLoaded }); renderRuns(); });
@@ -350,6 +410,7 @@ async function loadRuns({ all = false } = {}) {
 }
 
 function renderAll() {
+  resetProjectScopedSelection();
   renderProjectPanel();
   renderRequirements();
   renderCrList();
@@ -368,46 +429,239 @@ function renderProjectPanel() {
   const selectedId = state.uiState?.selected_project_id || '';
   select.innerHTML = `<option value="">Не выбран</option>` + state.projects.map(project => {
     const selected = project.project_id === selectedId ? 'selected' : '';
-    return `<option value="${escapeHtml(project.project_id)}" ${selected}>${escapeHtml(project.project_name || project.project_id)}</option>`;
+    const title = project.project_name || project.name || project.project_id || 'Без названия';
+    return `<option value="${escapeHtml(project.project_id)}" ${selected}>${escapeHtml(title)}</option>`;
   }).join('');
   const project = state.projects.find(item => item.project_id === selectedId);
-  $('project-path').textContent = project ? `${project.project_name || project.project_id} · ${project.project_root}` : 'Проект не выбран';
+  $('project-path').innerHTML = project ? renderSelectedProjectLabel(project) : 'Проект не выбран';
+  const deleteButton = $('delete-project-btn');
+  if (deleteButton) deleteButton.disabled = !project;
+  renderProjectActionResult();
+}
+function renderSelectedProjectLabel(project) {
+  const id = project.project_id || '—';
+  const root = project.project_root || '—';
+  return `<span class="project-meta-label">ID:</span> <span class="mono-text">${escapeHtml(id)}</span> <span class="project-meta-label">Путь:</span> <span class="path-text">${escapeHtml(root)}</span>`;
+}
+
+function renderProjectActionResult() {
+  const root = $('project-action-result');
+  if (!root) return;
+  if (!state.projectActionResult) {
+    root.classList.add('hidden');
+    root.innerHTML = '';
+    return;
+  }
+  const { action, response } = state.projectActionResult;
+  root.classList.remove('hidden');
+  root.innerHTML = action === 'delete' ? renderProjectDeleteResult(response) : renderProjectOnboardResult(response);
+  bindProjectActionResultButtons(root);
+}
+
+function renderProjectOnboardResult(response) {
+  const result = response?.result || {};
+  const details = response?.details || result.details || {};
+  const errorCode = details.error_code || result.error_code;
+  if (!response?.ok || result.status === 'failed') {
+    if (errorCode === 'project_root_already_registered') return renderDuplicateProjectResult(response);
+    if (errorCode === 'onboarding_failed' || result.error_type === 'OnboardingFailedError') return renderOnboardingFailedResult(response);
+    return `<div class="message error-message"><b>Проект не подключен.</b> ${escapeHtml(response?.message || result.message || 'Операция завершилась ошибкой.')}</div>${renderProjectDetails(response)}`;
+  }
+
+  const enrichment = result.knowledge_enrichment_status || '—';
+  const enrichmentText = enrichment === 'applied'
+    ? 'Архитектурное описание обработано'
+    : enrichment === 'skipped'
+      ? 'Архитектурное описание не найдено, проект подключен без enrichment'
+      : enrichment;
+  const warnings = Array.isArray(result.knowledge_enrichment_warnings) ? result.knowledge_enrichment_warnings : [];
+  const unmatched = Array.isArray(result.knowledge_enrichment_unmatched_mentions) ? result.knowledge_enrichment_unmatched_mentions : [];
+  return `<details class="project-result-card ok-card project-result-collapsed">
+    <summary><span class="project-result-title inline-title">Проект подключен</span></summary>
+    <div class="kv-grid compact-kv mini-kv project-result-body">
+      <div class="key">ID</div><div class="mono-text">${escapeHtml(result.project_id || '—')}</div>
+      <div class="key">Путь</div><div class="path-text">${escapeHtml(result.project_root || '—')}</div>
+      <div class="key">Файлов проиндексировано</div><div>${escapeHtml(result.indexed_files ?? '—')}</div>
+      <div class="key">Модулей</div><div>${escapeHtml(result.module_count ?? '—')}</div>
+      <div class="key">Символов</div><div>${escapeHtml(result.symbol_count ?? '—')}</div>
+      <div class="key">Knowledge</div><div>${result.knowledge_updated ? statusBadge('обновлен', 'ok') : statusBadge('без изменений')}</div>
+      <div class="key">Architecture enrichment</div><div>${statusBadge(enrichmentText, enrichment === 'applied' ? 'ok' : enrichment === 'skipped' ? 'warn' : '')}</div>
+    </div>
+    ${warnings.length ? `<details class="compact-details"><summary>Предупреждения: ${warnings.length}</summary><ul>${warnings.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul></details>` : ''}
+    ${unmatched.length ? renderUnmatchedMentions(unmatched) : ''}
+  </details>`;
+}
+
+function renderDuplicateProjectResult(response) {
+  const result = response?.result || {};
+  const details = response?.details || result.details || {};
+  return `<div class="project-result-card warn-card">
+    <div class="project-result-title">Проект с таким путем уже подключен.</div>
+    <div class="kv-grid compact-kv mini-kv">
+      <div class="key">Existing project id</div><div class="mono-text">${escapeHtml(details.existing_project_id || '—')}</div>
+      <div class="key">Existing project name</div><div>${escapeHtml(details.existing_project_name || '—')}</div>
+      <div class="key">Project root</div><div class="path-text">${escapeHtml(details.project_root || '—')}</div>
+    </div>
+    <div class="action-row">
+      <button class="btn small" type="button" data-project-action="select-existing" data-project-id="${escapeHtml(details.existing_project_id || '')}">Выбрать существующий проект</button>
+      <button class="btn small danger" type="button" data-project-action="delete-existing" data-project-id="${escapeHtml(details.existing_project_id || '')}">Удалить существующий проект</button>
+    </div>
+    ${renderProjectDetails(response)}
+  </div>`;
+}
+
+function renderOnboardingFailedResult(response) {
+  const result = response?.result || {};
+  const details = response?.details || result.details || {};
+  const warnings = details.knowledge_enrichment_warnings || result.knowledge_enrichment_warnings || [];
+  const rollback = details.rollback || result.rollback || {};
+  return `<div class="project-result-card err-card">
+    <div class="project-result-title">Проект не подключен: не удалось обработать архитектурное описание.</div>
+    <div class="kv-grid compact-kv mini-kv">
+      <div class="key">Architecture doc</div><div class="path-text">${escapeHtml(details.architecture_doc_path || result.architecture_doc_path || '—')}</div>
+      <div class="key">Trace</div><div class="path-text">${escapeHtml(details.knowledge_enrichment_trace_path || result.knowledge_enrichment_trace_path || '—')}</div>
+      <div class="key">Rollback</div><div>${rollback.deleted ? statusBadge('выполнен', 'ok') : statusBadge('нет данных', 'warn')}</div>
+    </div>
+    ${warnings.length ? `<details class="compact-details" open><summary>Warnings: ${warnings.length}</summary><ul>${warnings.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul></details>` : ''}
+    ${rollback.cleanup ? renderCleanupSummary(rollback.cleanup) : ''}
+    ${renderProjectDetails(response)}
+  </div>`;
+}
+
+function renderProjectDeleteResult(response) {
+  const result = response?.result || {};
+  if (!response?.ok || result.status === 'failed') {
+    return `<div class="project-result-card err-card"><div class="project-result-title">Проект не удален.</div><div class="message error-message">${escapeHtml(response?.message || result.message || 'Операция завершилась ошибкой.')}</div>${renderProjectDetails(response)}</div>`;
+  }
+  const cleanup = result.cleanup || {};
+  const warnings = Array.isArray(cleanup.warnings) ? cleanup.warnings : [];
+  return `<details class="project-result-card ok-card project-result-collapsed">
+    <summary><span class="project-result-title inline-title">Проект удален</span></summary>
+    <div class="project-result-body">
+      ${renderCleanupSummary(cleanup)}
+      ${warnings.length ? `<details class="compact-details"><summary>Предупреждения: ${warnings.length}</summary><ul>${warnings.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul></details>` : ''}
+    </div>
+  </details>`;
+}
+
+function renderCleanupSummary(cleanup) {
+  const graph = cleanup?.graph_deleted || {};
+  return `<div class="kv-grid compact-kv mini-kv">
+    <div class="key">Project root</div><div class="path-text">${escapeHtml(cleanup?.project_root || '—')}</div>
+    <div class="key">Удалено search documents</div><div>${escapeHtml(graph.cc_search_documents ?? '—')}</div>
+    <div class="key">Удалено vector documents</div><div>${escapeHtml(cleanup?.vector_deleted ?? '—')}</div>
+  </div>`;
+}
+
+function renderUnmatchedMentions(items) {
+  return `<details class="compact-details"><summary>Найдены расхождения между архитектурным описанием и кодом: ${items.length}</summary><ul>${items.map(item => {
+    if (typeof item === 'string') return `<li>${escapeHtml(item)}</li>`;
+    const name = item.mention || item.name || item.qualname || JSON.stringify(item);
+    const hints = Array.isArray(item.suggestions) ? item.suggestions.join(', ') : (item.hints || '');
+    return `<li>${escapeHtml(name)}${hints ? `<br><span class="muted">Подсказки: ${escapeHtml(hints)}</span>` : ''}</li>`;
+  }).join('')}</ul></details>`;
+}
+
+function renderProjectDetails(response) {
+  return `<details class="compact-details"><summary>Показать raw JSON</summary>${jsonBlock(response)}</details>`;
+}
+
+function bindProjectActionResultButtons(root) {
+  root.querySelectorAll('[data-project-action="select-existing"]').forEach(button => {
+    button.addEventListener('click', async () => {
+      const projectId = button.dataset.projectId;
+      if (!projectId) return;
+      state.uiState = await api.post('/api/ui-state/select-project', { project_id: projectId });
+      await loadProjects();
+      renderProjectPanel();
+    });
+  });
+  root.querySelectorAll('[data-project-action="delete-existing"]').forEach(button => {
+    button.addEventListener('click', async () => {
+      const projectId = button.dataset.projectId;
+      if (!projectId) return;
+      if (!confirm('Удалить существующий проект из codecollector? Индексные данные проекта будут очищены.')) return;
+      const response = await api.post('/api/projects/delete', { project_id: projectId });
+      console.log('project delete response', response);
+      state.projectActionResult = { action: 'delete', response };
+      await loadProjects();
+      if (state.uiState?.selected_project_id === projectId) {
+        state.uiState = await api.put('/api/ui-state', { selected_project_id: null });
+      }
+      renderProjectPanel();
+    });
+  });
 }
 function toggleProjectRegisterForm() { $('register-project-panel').classList.toggle('hidden'); }
 
-async function registerProject(event) {
+async function onboardProject(event) {
   event.preventDefault();
   const form = event.currentTarget;
   const button = form.querySelector('button[type="submit"]');
   const data = new FormData(form);
-  const projectRoot = String(data.get('project_root') || '').trim();
-  if (!projectRoot) { alert('Укажите путь к проекту.'); return; }
+  const inputRoot = String(data.get('input_root') || '').trim();
+  const projectName = String(data.get('project_name') || '').trim();
+  if (!inputRoot) { alert('Укажите путь к root-папке проекта.'); return; }
+  if (!projectName) { alert('Укажите название проекта.'); return; }
   const payload = {
-    project_root: projectRoot,
-    project_name: String(data.get('project_name') || '').trim() || null,
-    languages: String(data.get('languages') || 'python').split(',').map(v => v.trim()).filter(Boolean),
-    verification_commands: String(data.get('verification_commands') || '').split('\n').map(v => v.trim()).filter(Boolean),
-    index_excludes: String(data.get('index_excludes') || '').split('\n').map(v => v.trim()).filter(Boolean),
-    reference_library_paths: String(data.get('reference_library_paths') || '').split('\n').map(v => v.trim()).filter(Boolean),
+    input_root: inputRoot,
+    project_name: projectName,
+    full: data.get('full') === 'on',
+    skip_architecture_enrichment: data.get('skip_architecture_enrichment') === 'on',
   };
-  await withBusyButton(button, 'Регистрация...', async () => {
-    const result = await api.post('/api/projects/register', payload);
-    const project = result.project || result;
+  await withBusyButton(button, 'Подключение...', async () => {
+    const response = await api.post('/api/projects/onboard', payload);
+    console.log('project onboard response', response);
+    state.projectActionResult = { action: 'onboard', response };
     await loadProjects();
-    if (project.project_id) {
-      state.uiState = await api.post('/api/ui-state/select-project', { project_id: project.project_id });
+    const result = response.result || {};
+    if (response.ok && result.project_id) {
+      state.uiState = await api.post('/api/ui-state/select-project', { project_id: result.project_id });
+      $('register-project-panel').classList.add('hidden');
+      form.reset();
+      form.querySelector('[name="full"]').checked = true;
     }
     renderProjectPanel();
-    $('register-project-panel').classList.add('hidden');
-    form.reset();
   });
 }
 
 async function selectProjectFromDropdown() {
   const projectId = $('project-select').value;
-  if (!projectId) return;
+  if (!projectId) {
+    state.uiState = await api.put('/api/ui-state', { selected_project_id: null, selected_change_request_id: null });
+    state.selectedCrId = null;
+    state.selectedRunId = null;
+    renderAll();
+    return;
+  }
   state.uiState = await api.post('/api/ui-state/select-project', { project_id: projectId });
-  renderProjectPanel();
+  const selectedCr = state.changeRequests.find(item => item.cr_id === state.selectedCrId);
+  if (selectedCr && selectedCr.project_id !== projectId) {
+    state.selectedCrId = null;
+    state.selectedRunId = null;
+    state.uiState = await api.put('/api/ui-state', { selected_change_request_id: null });
+  }
+  renderAll();
+}
+
+async function deleteSelectedProject(event) {
+  const projectId = state.uiState?.selected_project_id || $('project-select').value;
+  if (!projectId) { alert('Сначала выберите проект.'); return; }
+  const project = state.projects.find(item => item.project_id === projectId);
+  const label = project ? `${project.project_name || project.project_id} (${project.project_root || projectId})` : projectId;
+  if (!confirm(`Удалить проект из codecollector? Индексные данные проекта будут очищены.\n\n${label}`)) return;
+  await withBusyButton(event.currentTarget, 'Удаление...', async () => {
+    const response = await api.post('/api/projects/delete', { project_id: projectId });
+    console.log('project delete response', response);
+    state.projectActionResult = { action: 'delete', response };
+    await loadProjects();
+    if (state.uiState?.selected_project_id === projectId) {
+      state.uiState = await api.put('/api/ui-state', { selected_project_id: null, selected_change_request_id: null });
+      state.selectedCrId = null;
+      state.selectedRunId = null;
+    }
+    renderAll();
+  });
 }
 
 async function setRequirementsPath() {
@@ -462,7 +716,9 @@ async function selectRequirement(requirementId) {
 }
 
 function renderRequirementDetail(item) {
-  const related = state.changeRequests.filter(cr => (cr.requirement_ids || []).includes(item.id));
+  const relatedAll = state.changeRequests.filter(cr => (cr.requirement_ids || []).includes(item.id));
+  const related = relatedAll.filter(crMatchesSelectedProject);
+  const relatedOtherProjects = getSelectedProjectId() ? relatedAll.filter(cr => !crMatchesSelectedProject(cr)) : [];
   $('requirement-detail').innerHTML = `
     <div class="detail-scroll">
       <div class="card">
@@ -485,6 +741,7 @@ function renderRequirementDetail(item) {
       <div class="card">
         <h3 class="card-title">Связанные запросы</h3>
         ${renderRelatedCrs(related)}
+        ${renderOtherProjectRelatedCrs(relatedOtherProjects)}
       </div>
     </div>
   `;
@@ -543,13 +800,27 @@ function bindCreateCrForm(requirement) {
 }
 
 function renderRelatedCrs(items) {
-  if (!items.length) return '<div class="empty-state">Для выбранного требования запросы еще не созданы.</div>';
+  if (!items.length) return '<div class="empty-state">Для выбранного требования запросы в текущем проекте еще не созданы.</div>';
   return items.map(cr => `
     <div class="list-item" data-open-cr="${escapeHtml(cr.cr_id)}">
       <div class="item-title">${escapeHtml(cr.code || cr.cr_id)} · ${escapeHtml(cr.title)}</div>
       <div class="item-meta">${statusBadge(cr.status)} ${escapeHtml(cr.cr_id)}</div>
     </div>
   `).join('');
+}
+
+function renderOtherProjectRelatedCrs(items) {
+  if (!items.length) return '';
+  return `<details class="compact-details related-other-projects">
+    <summary>Есть запросы по этому требованию в других проектах: ${items.length}</summary>
+    <div class="message compact-message">Эти CR не показываются в основном списке, потому что активен другой проект. Чтобы работать с ними, выберите соответствующий проект на верхней панели.</div>
+    ${items.map(cr => `
+      <div class="list-item muted-list-item">
+        <div class="item-title">${escapeHtml(cr.code || cr.cr_id)} · ${escapeHtml(cr.title)}</div>
+        <div class="item-meta">Проект: ${escapeHtml(getProjectTitleById(cr.project_id))} · ${escapeHtml(cr.project_id || '—')} · ${statusBadge(cr.status)}</div>
+      </div>
+    `).join('')}
+  </details>`;
 }
 
 function openCr(crId) {
@@ -560,13 +831,22 @@ function openCr(crId) {
 }
 
 function renderCrList() {
-  $('cr-count').textContent = String(state.changeRequests.length);
+  const visibleCrs = getVisibleChangeRequests();
+  const selectedProjectId = getSelectedProjectId();
+  $('cr-count').textContent = selectedProjectId && visibleCrs.length !== state.changeRequests.length
+    ? `${visibleCrs.length}/${state.changeRequests.length}`
+    : String(visibleCrs.length);
   const root = $('cr-list');
-  if (!state.changeRequests.length) {
-    root.innerHTML = '<div class="empty-state">Запросы пока не созданы.</div>';
+  if (!visibleCrs.length) {
+    root.innerHTML = selectedProjectId
+      ? '<div class="empty-state">Для выбранного проекта запросы пока не созданы.</div>'
+      : '<div class="empty-state">Запросы пока не созданы.</div>';
     return;
   }
-  root.innerHTML = state.changeRequests.map(cr => `
+  const filterNote = selectedProjectId
+    ? `<div class="message compact-message">Показаны запросы выбранного проекта: ${escapeHtml(getProjectTitleById(selectedProjectId))}.</div>`
+    : '';
+  root.innerHTML = filterNote + visibleCrs.map(cr => `
     <div class="list-item ${cr.cr_id === state.selectedCrId ? 'active' : ''}" data-cr-id="${escapeHtml(cr.cr_id)}">
       <div class="item-title">${escapeHtml(cr.code || cr.cr_id)} · ${escapeHtml(cr.title)}</div>
       <div class="item-meta">${statusBadge(cr.status)} ${escapeHtml((cr.requirement_ids || []).join(', ') || 'без требования')}</div>
@@ -584,6 +864,10 @@ function renderSelectedCr() {
   const cr = state.changeRequests.find(item => item.cr_id === state.selectedCrId);
   if (!cr) {
     $('cr-detail').innerHTML = '<div class="empty-state">Выберите запрос или создайте его из требования.</div>';
+    return;
+  }
+  if (!crMatchesSelectedProject(cr)) {
+    $('cr-detail').innerHTML = '<div class="empty-state">Выбранный запрос относится к другому проекту. Выберите соответствующий проект на верхней панели.</div>';
     return;
   }
   const candidates = cr.raw?.last_analyze_result?.candidates || [];
@@ -772,11 +1056,29 @@ function renderAnalyzeOverview(cr) {
   if (!analyze) return '<div class="empty-state">Анализ еще не выполнялся.</div>';
   return `
     <div class="analysis-grid">
+      ${renderAnalyzeMetadata(cr)}
       ${renderQualitySummary(cr)}
       ${renderOperationSummary(cr)}
       ${renderTargetRecommendationSummary(cr)}
     </div>
   `;
+}
+
+function renderAnalyzeMetadata(cr) {
+  const analyze = getAnalyzeResult(cr) || {};
+  const summary = getAnalyzeSummary(cr) || {};
+  return `<div class="analysis-box">
+    <div class="analysis-title">Сводка анализа</div>
+    <div class="kv-grid compact-kv mini-kv">
+      <div class="key">Session</div><div class="mono-text">${escapeHtml(analyze.session_id || cr.session_id || '—')}</div>
+      <div class="key">Project</div><div class="mono-text">${escapeHtml(analyze.project_id || cr.project_id || '—')}</div>
+      <div class="key">Статус</div><div>${statusBadge(summary.status || cr.status || '—')}</div>
+      <div class="key">Ручная проверка</div><div>${summary.manual_review_required || analyze.manual_review_required ? statusBadge('требуется', 'warn') : statusBadge('не требуется', 'ok')}</div>
+      <div class="key">Recall candidates</div><div>${escapeHtml(analyze.recall_candidates_count ?? summary.recall_candidates_count ?? '—')}</div>
+      <div class="key">Returned candidates</div><div>${escapeHtml(summary.returned_candidates_count ?? (Array.isArray(analyze.candidates) ? analyze.candidates.length : '—'))}</div>
+      <div class="key">Context summary</div><div>${summary.has_context_summary || analyze.context_summary ? statusBadge('есть', 'ok') : statusBadge('нет')}</div>
+    </div>
+  </div>`;
 }
 
 function renderQualitySummary(cr) {
@@ -824,22 +1126,29 @@ function renderOperationSummary(cr) {
 function renderTargetRecommendationSummary(cr) {
   const recommendation = getTargetRecommendation(cr);
   const target = recommendation.recommended_target || cr.recommended_target;
-  const role = recommendation.target_role || '';
+  const role = effectiveTargetRoleForAnalyze(cr);
   const confidence = recommendation.target_confidence ?? getAnalyzeSummary(cr).target_selection_confidence;
   const manualReview = Boolean(recommendation.manual_review_required || getAnalyzeSummary(cr).manual_review_required);
   const source = getAnalyzeSummary(cr).target_selection_source;
   const post = recommendation.post_processing;
+  const parentQualname = recommendation.parent_qualname || post?.parent_qualname;
+  const expectedKind = recommendation.expected_new_symbol_kind;
+  const scope = getEffectiveInsertScope(cr);
   return `<div class="analysis-box">
     <div class="analysis-title">Рекомендация места</div>
     <div class="kv-grid compact-kv mini-kv">
       <div class="key">Место</div><div class="mono-text">${escapeHtml(target || '—')}</div>
-      <div class="key">Роль</div><div>${badge(targetRoleLabel(role), role === 'anchor' ? 'blue' : role === 'target' ? 'ok' : 'warn')}</div>
+      <div class="key">Роль</div><div>${badge(targetRoleLabel(role), roleBadgeKind(role))}</div>
+      <div class="key">Область вставки</div><div>${escapeHtml(insertScopeLabel(scope))}</div>
+      <div class="key">Parent class</div><div class="mono-text">${escapeHtml(parentQualname || (role === 'parent_class' ? target : '—'))}</div>
+      <div class="key">Новый symbol</div><div>${escapeHtml(expectedKind || '—')}</div>
       <div class="key">Источник</div><div>${escapeHtml(source || '—')}</div>
       <div class="key">Уверенность</div><div>${escapeHtml(formatConfidence(confidence))}</div>
-      <div class="key">Проверка</div><div>${manualReview ? statusBadge('требуется') : statusBadge('не требуется', 'ok')}</div>
+      <div class="key">Проверка</div><div>${manualReview ? statusBadge('требуется', 'warn') : statusBadge('не требуется', 'ok')}</div>
     </div>
+    <div class="message compact-message">${escapeHtml(targetRoleHelp(role))}</div>
     ${recommendation.target_reason ? `<div class="analysis-text">${escapeHtml(recommendation.target_reason)}</div>` : ''}
-    ${insertScopeHelp(getEffectiveInsertScope(cr), role) ? `<div class="message compact-message">${escapeHtml(insertScopeHelp(getEffectiveInsertScope(cr), role))}</div>` : ''}
+    ${insertScopeHelp(scope, role) ? `<div class="message compact-message">${escapeHtml(insertScopeHelp(scope, role))}</div>` : ''}
     ${post ? `<div class="message compact-message">Anchor скорректирован: ${escapeHtml(post.original_recommended_target || '—')} → ${escapeHtml(post.recommended_target || '—')}</div>` : ''}
     ${renderWarningList(recommendation.warnings || getAnalyzeResult(cr)?.warnings)}
   </div>`;
@@ -946,9 +1255,10 @@ function renderCandidates(candidates, cr) {
     return `${manualBlock}<div class="empty-state">Кандидаты появятся после выполнения анализа. Если анализ уже выполнен, место изменения можно указать вручную.</div>`;
   }
   return `${manualBlock}<table class="table candidates-table"><thead><tr><th>Ранг</th><th>Место изменения</th><th>Тип</th><th>Оценка</th><th>LLM</th><th>Причины</th><th></th></tr></thead><tbody>${candidates.map(candidate => {
-    const llmBadge = candidate.llm_recommended ? badge('рекомендовано', 'ok') : candidate.ranked_by_llm ? badge(`LLM #${candidate.llm_rank || '—'}`, 'info') : badge('поиск');
+    const llmBadge = candidate.llm_recommended ? badge('рекомендовано', 'ok') : candidate.ranked_by_llm ? badge(`LLM #${candidate.llm_rank || '—'}`, 'info') : badge('не ранжировался LLM', 'warn');
     const scoreText = [candidate.relevance_category, candidate.confidence != null ? `увер. ${formatConfidence(candidate.confidence)}` : '', candidate.score != null ? `score ${candidate.score}` : ''].filter(Boolean).join('<br>');
-    const reasons = [candidate.llm_reason ? `LLM: ${candidate.llm_reason}` : '', ...(candidate.reasons || []).slice(0, 4)].filter(Boolean);
+    const candidateMeta = [candidate.docstring ? `Docstring: ${candidate.docstring}` : '', (candidate.requirements || []).length ? `Требования: ${(candidate.requirements || []).join(', ')}` : ''].filter(Boolean);
+    const reasons = [candidate.llm_reason ? `LLM: ${candidate.llm_reason}` : '', ...candidateMeta, ...(candidate.reasons || []).slice(0, 4)].filter(Boolean);
     return `
     <tr>
       <td>${candidate.llm_rank != null ? escapeHtml(candidate.llm_rank) : '—'}</td>
@@ -1153,12 +1463,26 @@ async function deleteCr(crId, button) {
 
 function renderRuns() {
   const root = $('run-list');
-  $('runs-count').textContent = state.runsAllLoaded ? String(state.runs.length) : `${state.runs.length}/${state.defaultRunsLimit}`;
+  const visibleRuns = getVisibleRuns();
+  const selectedProjectId = getSelectedProjectId();
+  $('runs-count').textContent = state.runsAllLoaded
+    ? String(visibleRuns.length)
+    : `${visibleRuns.length}/${state.runs.length}`;
   const showAllBtn = $('show-all-runs-btn');
   if (showAllBtn) showAllBtn.disabled = state.runsAllLoaded;
-  if (!state.runs.length) { root.innerHTML = '<div class="empty-state">Запусков пока нет.</div>'; return; }
-  const limitNote = state.runsAllLoaded ? '' : '<div class="message compact-message">Показаны последние запуски. Старый запуск можно открыть из связанного CR или загрузить весь список.</div>';
-  root.innerHTML = limitNote + state.runs.map(run => `
+  if (!visibleRuns.length) {
+    root.innerHTML = selectedProjectId
+      ? '<div class="empty-state">Для выбранного проекта запусков в загруженном списке нет. Запуски можно открыть из связанного CR.</div>'
+      : '<div class="empty-state">Запусков пока нет.</div>';
+    return;
+  }
+  const limitNote = state.runsAllLoaded
+    ? ''
+    : '<div class="message compact-message">Показаны последние запуски. Старый запуск можно открыть из связанного CR или загрузить весь список.</div>';
+  const filterNote = selectedProjectId
+    ? `<div class="message compact-message">Список отфильтрован по выбранному проекту через связанные CR: ${escapeHtml(getProjectTitleById(selectedProjectId))}.</div>`
+    : '';
+  root.innerHTML = filterNote + limitNote + visibleRuns.map(run => `
     <div class="list-item ${run.run_id === state.selectedRunId ? 'active' : ''}" data-run-id="${escapeHtml(run.run_id)}">
       <div class="item-title">${escapeHtml(run.run_id)}</div>
       <div class="item-meta">${statusBadge(run.status)} ${escapeHtml(run.selected_target || '')}</div>
@@ -1214,21 +1538,25 @@ async function renderRunDetail(runId) {
           ${renderRunContext(runId)}
         </div>
         <div class="tabs">
-          <button class="tab-btn active" data-tab="run-steps">Шаги</button>
+          <button class="tab-btn active" data-tab="run-result">Результат</button>
+          <button class="tab-btn" data-tab="run-steps">Шаги</button>
           <button class="tab-btn" data-tab="run-checks">Проверки</button>
           <button class="tab-btn" data-tab="run-apply">Применение</button>
           <button class="tab-btn" data-tab="run-resources">Статистика</button>
           <button class="tab-btn" data-tab="run-diff">Diff</button>
           <button class="tab-btn" data-tab="run-code">Код</button>
           <button class="tab-btn" data-tab="run-test">Тест</button>
+          <button class="tab-btn" data-tab="run-context">Контекст</button>
         </div>
-        <div id="run-steps" class="tab-panel active">${renderSteps(steps)}</div>
+        <div id="run-result" class="tab-panel active">${renderRunResult(summary)}</div>
+        <div id="run-steps" class="tab-panel">${renderSteps(steps)}</div>
         <div id="run-checks" class="tab-panel">${renderChecks(checks, summary)}</div>
         <div id="run-apply" class="tab-panel">${renderApplyPlan(summary)}</div>
         <div id="run-resources" class="tab-panel">${renderResources(summary)}</div>
         <div id="run-diff" class="tab-panel">${renderDiff(diff)}</div>
         <div id="run-code" class="tab-panel">${renderArtifact(code, 'code')}</div>
         <div id="run-test" class="tab-panel">${renderArtifact(test, 'test', summary)}</div>
+        <div id="run-context" class="tab-panel">${renderRunContextDetails(summary)}</div>
       </div>
     `;
     bindTabs(root);
@@ -1247,6 +1575,7 @@ function renderRunContext(runId) {
       <h3 class="card-title">Связанный запрос</h3>
       <div class="kv-grid">
         <div class="key">Код запроса</div><div>${escapeHtml(cr.code || '—')}</div>
+        <div class="key">Проект</div><div>${escapeHtml(getProjectTitleById(cr.project_id))} <span class="mono-text">${escapeHtml(cr.project_id || '—')}</span></div>
         <div class="key">Название</div><div>${escapeHtml(cr.title || '—')}</div>
         <div class="key">Описание</div><div>${escapeHtml(cr.description || '—')}</div>
         <div class="key">Ограничения</div><div>${escapeHtml((cr.constraints || []).join('; ') || '—')}</div>
@@ -1260,7 +1589,6 @@ function renderRunContext(runId) {
 }
 
 function renderRunSummary(summary) {
-  const mainIssue = summary.primary_issue ? renderPrimaryIssue(summary.primary_issue) : '';
   const partialGeneratedTest = summary.status === 'generated_test_verification_failed' || summary.generated_test_failed === true || summary.generated_test_verification_failed === true;
   const productionState = partialGeneratedTest && summary.production_failed === false ? statusBadge('готов к review', 'ok') : (summary.verification_passed ? statusBadge('без ошибок', 'ok') : statusBadge('требует проверки', 'warn'));
   const generatedTestState = summary.generated_test_failed || summary.generated_test_verification_failed
@@ -1271,22 +1599,48 @@ function renderRunSummary(summary) {
     <div class="kv-grid compact-kv">
       <div class="key">Статус</div><div>${statusBadge(summary.status)}</div>
       <div class="key">Операция</div><div>${escapeHtml(operationLabel(summary.final_operation || summary.requested_operation) || '—')}</div>
+      <div class="key">Итоговая операция</div><div>${escapeHtml(operationLabel(summary.final_operation) || '—')}</div>
       <div class="key">Область вставки</div><div>${escapeHtml(insertScopeLabel(summary.insert_scope))}</div>
+      <div class="key">Роль места</div><div>${badge(targetRoleLabel(summary.target_role), roleBadgeKind(summary.target_role))}</div>
       <div class="key">Место изменения</div><div class="mono-text">${escapeHtml(summary.selected_target || '—')}</div>
+      <div class="key">Parent class</div><div class="mono-text">${escapeHtml(summary.parent_qualname || '—')}</div>
+      <div class="key">Новый symbol</div><div>${escapeHtml(summary.expected_new_symbol_kind || '—')}</div>
       <div class="key">Production-код</div><div>${productionState}</div>
       <div class="key">Generated test</div><div>${generatedTestState}</div>
       <div class="key">Repair</div><div>${summary.repair_used ? statusBadge('использовался', 'warn') : statusBadge('нет')}</div>
       <div class="key">Применение</div><div>${summary.merge_ready ? statusBadge('готово', 'ok') : statusBadge('не готово', 'warn')}</div>
       <div class="key">Рабочая копия</div><div class="path-text">${escapeHtml(summary.workspace_path || '—')}</div>
     </div>
-    ${mainIssue}
+  </div>`;
+}
+
+function renderRunResult(summary) {
+  const partialGeneratedTest = summary.status === 'generated_test_verification_failed' || summary.generated_test_failed === true || summary.generated_test_verification_failed === true;
+  const lines = Array.isArray(summary.merge_plan_summary_lines) ? summary.merge_plan_summary_lines : [];
+  return `<div class="compact-section">
+    ${summary.primary_issue ? renderPrimaryIssue(summary.primary_issue) : '<div class="message compact-message">Основная проблема не выделена. Подробности доступны во вкладках “Проверки” и “Применение”.</div>'}
+    ${partialGeneratedTest ? `<div class="message warning-message">Ошибка относится к generated test. Production-код можно рассматривать отдельно от сгенерированного теста.</div>` : ''}
+    <div class="kv-grid compact-kv">
+      <div class="key">Статус</div><div>${statusBadge(summary.status)}</div>
+      <div class="key">Проверки</div><div>${summary.verification_passed ? statusBadge('пройдены', 'ok') : statusBadge('требуют внимания', 'warn')}</div>
+      <div class="key">Применение</div><div>${summary.merge_ready ? statusBadge('готово к review', 'ok') : statusBadge('не готово', 'warn')}</div>
+      <div class="key">Repair</div><div>${summary.repair_used ? statusBadge('использовался', 'warn') : statusBadge('нет')}</div>
+      <div class="key">Generated test</div><div>${summary.generated_test_failed || summary.generated_test_verification_failed ? statusBadge('ошибка', 'warn') : summary.has_generated_test ? statusBadge('есть', 'ok') : statusBadge('нет')}</div>
+    </div>
+    ${lines.length ? `<div class="compact-list-block full-width"><div class="compact-list-title">Краткий итог</div><ul>${lines.map(line => `<li>${escapeHtml(line)}</li>`).join('')}</ul></div>` : ''}
+    ${(summary.warnings || []).length ? `<div class="compact-list-block full-width"><div class="compact-list-title">Предупреждения</div><ul>${summary.warnings.map(line => `<li>${escapeHtml(line)}</li>`).join('')}</ul></div>` : ''}
+  </div>`;
+}
+
+function renderRunContextDetails(summary) {
+  return `<div class="compact-section">
     <div class="summary-columns">
       ${renderCompactList('Файлы к применению', summary.changed_files)}
       ${renderCompactList('Исключены из применения', summary.excluded_files)}
       ${renderCompactList('Символы', summary.symbols_in_changed_files)}
-      ${renderCompactList('Требования', summary.linked_requirements)}
       ${renderCompactList('Тестовые команды', summary.recommended_test_commands)}
       ${renderCompactList('Проблемные generated tests', summary.generated_test_failed_files)}
+      ${renderImportChangesList('Добавленные импорты', summary.import_changes)}
     </div>
   </div>`;
 }
@@ -1322,6 +1676,22 @@ function renderImportChangesList(title, values) {
     return [action, module, names].filter(Boolean).join(' ');
   });
   return renderCompactList(title, formatted);
+}
+
+function renderRunArtifactsList(artifacts) {
+  if (!artifacts || typeof artifacts !== 'object') return '';
+  const values = [];
+  if (artifacts.run_dir) values.push(`Run dir: ${artifacts.run_dir}`);
+  for (const key of ['external_code_generation', 'external_test_generation', 'repair_generation']) {
+    const item = artifacts[key];
+    if (!item || typeof item !== 'object') continue;
+    const label = key === 'external_code_generation' ? 'Codegen' : key === 'external_test_generation' ? 'Testgen' : 'Repair';
+    if (item.trace_path) values.push(`${label} trace: ${item.trace_path}`);
+    if (item.request_path) values.push(`${label} request: ${item.request_path}`);
+    if (item.result_path) values.push(`${label} result: ${item.result_path}`);
+    if (item.error_type || item.message) values.push(`${label} error: ${[item.error_type, item.message].filter(Boolean).join(' — ')}`);
+  }
+  return renderCompactList('Артефакты запуска', values);
 }
 
 function renderApplyPlan(summary) {
@@ -1365,8 +1735,39 @@ function renderResources(summary) {
     usageRow('Repair', summary.repair_generation_usage),
     usageRow('Embeddings', summary.embedding_usage, true),
   ].filter(Boolean).join('');
-  if (!rows) return '<div class="empty-state">Usage-метрики для этого запуска отсутствуют.</div>';
-  return `<table class="table compact-usage-table"><thead><tr><th>Этап</th><th>Вызовы</th><th>Prompt</th><th>Output</th><th>Total</th><th>Длительность</th><th>Дополнительно</th></tr></thead><tbody>${rows}</tbody></table>`;
+  const table = rows ? `<table class="table compact-usage-table"><thead><tr><th>Этап</th><th>Вызовы</th><th>Prompt</th><th>Output</th><th>Total</th><th>Длительность</th><th>Дополнительно</th></tr></thead><tbody>${rows}</tbody></table>` : '<div class="empty-state">Usage-метрики для этого запуска отсутствуют.</div>';
+  return `${table}${renderRepairSummary(summary)}${renderGeneratedTestApplySummary(summary)}${renderRunArtifactsList(summary.run_artifacts)}`;
+}
+
+function renderRepairSummary(summary) {
+  if (!summary.repair_used && !summary.repair_summary) return '';
+  const repair = summary.repair_summary || {};
+  return `<div class="compact-list-block full-width"><div class="compact-list-title">Repair</div>
+    <div class="kv-grid compact-kv mini-kv">
+      <div class="key">Использовался</div><div>${summary.repair_used ? statusBadge('да', 'warn') : statusBadge('нет')}</div>
+      <div class="key">Статус</div><div>${statusBadge(repair.status || '—')}</div>
+      <div class="key">Code artifact</div><div>${repair.has_code_artifact ? statusBadge('есть', 'ok') : statusBadge('нет')}</div>
+      <div class="key">Warnings</div><div>${escapeHtml(repair.warnings_count ?? '—')}</div>
+      <div class="key">Ошибка</div><div>${escapeHtml([repair.error_type, repair.message].filter(Boolean).join(' — ') || '—')}</div>
+    </div>
+  </div>`;
+}
+
+function renderGeneratedTestApplySummary(summary) {
+  const gta = summary.generated_test_apply;
+  if (!gta || typeof gta !== 'object') return '';
+  return `<div class="compact-list-block full-width"><div class="compact-list-title">Generated test apply</div>
+    <div class="kv-grid compact-kv mini-kv">
+      <div class="key">Применен в staging</div><div>${gta.skipped === false ? statusBadge('да', 'ok') : statusBadge('нет / пропущен', 'warn')}</div>
+      <div class="key">Рекомендован к merge</div><div>${gta.merge_recommended === false ? statusBadge('нет', 'warn') : gta.merge_recommended === true ? statusBadge('да', 'ok') : '—'}</div>
+      <div class="key">Verification failed</div><div>${gta.verification_failed ? statusBadge('да', 'warn') : statusBadge('нет')}</div>
+      <div class="key">Причина</div><div>${escapeHtml(gta.reason || '—')}</div>
+      <div class="key">Сообщение</div><div>${escapeHtml(gta.message || '—')}</div>
+    </div>
+    ${renderCompactList('Applied tests', gta.applied_tests || [])}
+    ${renderCompactList('Candidate tests', gta.candidate_test_files || [])}
+    ${renderCompactList('Excluded files', gta.excluded_files || [])}
+  </div>`;
 }
 
 function usageRow(title, usage, embedding = false) {
@@ -1404,10 +1805,34 @@ function renderSteps(steps) {
   `).join('')}</tbody></table>`;
 }
 function renderChecks(checks, summary = null) {
+  const list = Array.isArray(checks) ? checks : [];
   const note = summary && (summary.status === 'generated_test_verification_failed' || summary.generated_test_failed === true)
     ? '<div class="message warning-message">Ошибка относится к сгенерированному тесту. Основной production-код не классифицирован как ошибочный.</div>'
     : '';
-  return note + `<table class="table checks-table"><thead><tr><th>Проверка</th><th>Результат</th><th>Уровень</th><th>Проблемы</th></tr></thead><tbody>${(checks || []).map(check => `
+  const production = [];
+  const generated = [];
+  for (const check of list) {
+    if (isGeneratedTestCheck(check, summary)) generated.push(check);
+    else production.push(check);
+  }
+  return note + `
+    <div class="checks-group"><div class="subsection-title">Production checks</div>${renderChecksTable(production)}</div>
+    <div class="checks-group"><div class="subsection-title">Generated test checks</div>${renderChecksTable(generated)}</div>
+  `;
+}
+
+function isGeneratedTestCheck(check, summary = null) {
+  const name = String(check?.name || '');
+  if (name.startsWith('generated_test_')) return true;
+  if (summary?.generated_test_failed && name === 'runtime_pytest_recommended' && check?.ok === false) return true;
+  const details = check?.details || {};
+  const files = JSON.stringify([details.test_file_path, details.command, details.stdout, check?.issues || []]).toLowerCase();
+  return files.includes('test_generated_');
+}
+
+function renderChecksTable(items) {
+  if (!items.length) return '<div class="empty-state compact-empty">Нет проверок в этой группе.</div>';
+  return `<table class="table checks-table"><thead><tr><th>Проверка</th><th>Результат</th><th>Уровень</th><th>Проблемы</th></tr></thead><tbody>${items.map(check => `
     <tr>
       <td>${escapeHtml(check.name)}</td>
       <td>${check.ok ? statusBadge('ok', 'ok') : statusBadge('ошибка', 'err')}</td>
@@ -1459,8 +1884,11 @@ function renderArtifact(artifact, kind, summary = null) {
   const testNote = kind === 'test' && summary && (summary.generated_test_failed || summary.generated_test_verification_failed || summary.generated_test_merge_recommended === false)
     ? `<div class="message warning-message">Сгенерированный тест создан, но не рекомендован к применению.${renderCompactList('Исключенные test-файлы', summary.generated_test_excluded_files || summary.excluded_files || [])}</div>`
     : '';
+  const repairNote = kind === 'code' && artifact.source === 'repair_result'
+    ? '<div class="message warning-message">Показан финальный production artifact после repair. Primary generation доступен в raw details.</div>'
+    : '';
   const importChanges = kind === 'code' && artifact.artifact?.import_changes ? renderImportChangesList('Добавленные импорты', artifact.artifact.import_changes) : '';
-  return `${testNote}${importChanges}${source ? codeBlock(source) : ''}<details><summary>План и метрики</summary>${jsonBlock({ planner_result: artifact.planner_result, llm_usage: artifact.llm_usage, warnings: artifact.warnings })}</details>`;
+  return `${testNote}${repairNote}${importChanges}${source ? codeBlock(source) : ''}<details><summary>План и метрики</summary>${jsonBlock({ source: artifact.source, planner_result: artifact.planner_result, llm_usage: artifact.llm_usage, warnings: artifact.warnings })}</details>`;
 }
 
 function bindTabs(root) {

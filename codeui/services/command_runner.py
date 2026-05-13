@@ -26,7 +26,14 @@ class CommandRunner:
     def __init__(self, settings: Settings) -> None:
         self._settings = settings
 
-    def run(self, command: list[str], *, cwd: Path | None = None, timeout_sec: int | None = None) -> CommandResult:
+    def run(
+        self,
+        command: list[str],
+        *,
+        cwd: Path | None = None,
+        timeout_sec: int | None = None,
+        check_returncode: bool = True,
+    ) -> CommandResult:
         effective_cwd = cwd or self._settings.codecollector_root
         timeout = timeout_sec or self._settings.codecollector.command_timeout_sec
         start = time.monotonic()
@@ -76,7 +83,7 @@ class CommandRunner:
             stderr=completed.stderr or "",
             duration_sec=duration,
         )
-        if completed.returncode != 0:
+        if check_returncode and completed.returncode != 0:
             raise ApiError(
                 "CODECOLLECTOR_COMMAND_FAILED",
                 "codecollector command failed",
