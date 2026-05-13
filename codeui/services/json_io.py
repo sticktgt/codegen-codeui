@@ -47,14 +47,19 @@ def extract_json_from_stdout(stdout: str) -> Any:
     except json.JSONDecodeError:
         pass
 
-    # Defensive fallback: logs may be mixed into stdout. Try to parse the last JSON object/array.
-    starts = [idx for idx in (text.rfind("{"), text.rfind("[")) if idx >= 0]
-    for start in sorted(starts):
-        candidate = text[start:]
+    # codecollector CLI может писать лог-строки перед JSON. Ищем последний полный
+    # JSON object/array, а не последний символ "{" внутри вложенного блока.
+    decoder = json.JSONDecoder()
+    for start, char in enumerate(text):
+        if char not in "{[":
+            continue
         try:
-            return json.loads(candidate)
+            payload, end = decoder.raw_decode(text[start:])
         except json.JSONDecodeError:
             continue
+        if text[start + end :].strip():
+            continue
+        return payload
 
     raise ApiError(
         "CODECOLLECTOR_INVALID_OUTPUT",

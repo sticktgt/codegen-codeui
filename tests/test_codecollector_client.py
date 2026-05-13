@@ -1,0 +1,126 @@
+from __future__ import annotations
+
+from pathlib import Path
+
+from codeui.config import CodeCollectorSettings, Settings
+from codeui.services.codecollector_client import CodeCollectorClient
+from codeui.services.command_runner import CommandResult
+
+
+class RecordingRunner:
+    def __init__(self) -> None:
+        self.commands: list[list[str]] = []
+
+    def run(
+        self,
+        command: list[str],
+        *,
+        cwd: Path | None = None,
+        timeout_sec: int | None = None,
+        check_returncode: bool = True,
+    ) -> CommandResult:
+        self.commands.append(command)
+        return CommandResult(
+            command=command,
+            cwd=cwd or Path.cwd(),
+            returncode=0,
+            stdout='{"ok": true}',
+            stderr="",
+            duration_sec=0.01,
+        )
+
+
+def make_settings(tmp_path: Path) -> Settings:
+    return Settings(
+        codecollector=CodeCollectorSettings(root_dir=tmp_path),
+        config_path=tmp_path / "config.yaml",
+        base_dir=tmp_path,
+    )
+
+
+def test_generate_session_passes_explicit_insert_scope_for_insert_after_symbol(tmp_path: Path) -> None:
+    runner = RecordingRunner()
+    client = CodeCollectorClient(make_settings(tmp_path), runner=runner)  # type: ignore[arg-type]
+
+    client.generate_session(
+        session_id="session-1",
+        selected_qualname="sample.Repository",
+        operation="insert_after_symbol",
+        insert_scope="class_body",
+    )
+
+    command = runner.commands[-1]
+    assert command == [
+        "python",
+        "-m",
+        "codecollector",
+        "sessions",
+        "generate",
+        "--session-id",
+        "session-1",
+        "--selected-qualname",
+        "sample.Repository",
+        "--operation",
+        "insert_after_symbol",
+        "--insert-scope",
+        "class_body",
+    ]
+
+
+def test_generate_session_omits_insert_scope_for_replace_symbol(tmp_path: Path) -> None:
+    runner = RecordingRunner()
+    client = CodeCollectorClient(make_settings(tmp_path), runner=runner)  # type: ignore[arg-type]
+
+    client.generate_session(
+        session_id="session-1",
+        selected_qualname="sample.Repository.save",
+        operation="replace_symbol",
+        insert_scope="class_body",
+    )
+
+    command = runner.commands[-1]
+    assert "--insert-scope" not in command
+    assert "class_body" not in command
+
+
+def test_onboard_project_uses_new_projects_onboard_command(tmp_path: Path) -> None:
+    runner = RecordingRunner()
+    client = CodeCollectorClient(make_settings(tmp_path), runner=runner)  # type: ignore[arg-type]
+
+    client.onboard_project(
+        input_root="/repo/example",
+        project_name="example_project",
+        full=True,
+        skip_architecture_enrichment=True,
+    )
+
+    assert runner.commands[-1] == [
+        "python",
+        "-m",
+        "codecollector",
+        "projects",
+        "onboard",
+        "--input-root",
+        "/repo/example",
+        "--project-name",
+        "example_project",
+        "--full",
+        "--skip-architecture-enrichment",
+    ]
+
+
+def test_delete_project_uses_projects_delete_command(tmp_path: Path) -> None:
+    runner = RecordingRunner()
+    client = CodeCollectorClient(make_settings(tmp_path), runner=runner)  # type: ignore[arg-type]
+
+    client.delete_project("proj-1")
+
+    assert runner.commands[-1] == [
+        "python",
+        "-m",
+        "codecollector",
+        "projects",
+        "delete",
+        "--project-id",
+        "proj-1",
+    ]
