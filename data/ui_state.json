@@ -1,8 +1,8 @@
 {
-  "selected_project_id": "proj-20260401T124114819654Z-107054",
-  "requirements_file_path": "/home/stickt/llm/codeui/data/requirements.json",
+  "selected_project_id": "proj-20260518T120713820685Z-ad2254",
+  "requirements_file_path": "/home/stickt/llm/example_project_n7PPTa/requirements.json",
   "selected_requirement_ids": [
-    "FO-NP-LN-000006"
+    "SN-01-000004"
   ],
-  "selected_change_request_id": null
+  "selected_change_request_id": "cr-20260519T111611900498Z-757973"
 }

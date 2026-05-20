@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field, field_validator
 
 class AppSettings(BaseModel):
     name: str = "codeui"
-    version: str = "0.2.14"
+    version: str = "0.2.31"
 
 
 class ServerSettings(BaseModel):
@@ -23,6 +23,21 @@ class ServerSettings(BaseModel):
 class LoggingSettings(BaseModel):
     level: str = "INFO"
     format: str = "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
+
+
+class CommandTraceSettings(BaseModel):
+    enabled: bool = True
+    storage_dir: Path = Path(".trace/codecollector_cli")
+    save_stdout: bool = True
+    save_stderr: bool = True
+    filename_label_max_chars: int = 80
+
+    @field_validator("filename_label_max_chars")
+    @classmethod
+    def validate_filename_label_max_chars(cls, value: int) -> int:
+        if value <= 0:
+            raise ValueError("filename_label_max_chars must be positive")
+        return value
 
 
 class CodeCollectorSettings(BaseModel):
@@ -71,6 +86,7 @@ class Settings(BaseModel):
     codecollector: CodeCollectorSettings
     requirements: RequirementsSettings = Field(default_factory=RequirementsSettings)
     change_requests: ChangeRequestsSettings = Field(default_factory=ChangeRequestsSettings)
+    command_trace: CommandTraceSettings = Field(default_factory=CommandTraceSettings)
     ui: UiSettings = Field(default_factory=UiSettings)
 
     config_path: Path
@@ -104,6 +120,10 @@ class Settings(BaseModel):
     @property
     def ui_state_path(self) -> Path:
         return self.resolve_path(self.ui.state_file)
+
+    @property
+    def command_trace_root(self) -> Path:
+        return self.resolve_path(self.command_trace.storage_dir)
 
 
 def _default_config_path() -> Path:

@@ -90,16 +90,21 @@ class RunSummaryView(BaseModel):
     code_generation_usage: dict[str, Any] | None = None
     test_generation_usage: dict[str, Any] | None = None
     repair_generation_usage: dict[str, Any] | None = None
+    generated_test_review_usage: dict[str, Any] | None = None
     embedding_usage: dict[str, Any] | None = None
     primary_issue: dict[str, Any] | None = None
     merge_plan_summary_lines: list[str] = Field(default_factory=list)
     generated_test_apply: dict[str, Any] | None = None
     run_artifacts: dict[str, Any] = Field(default_factory=dict)
+    generated_test_failure_review: dict[str, Any] | None = None
+    generated_test_failure_review_verdict: str | None = None
     warnings: list[Any] = Field(default_factory=list)
 
 
 class DiffView(BaseModel):
     changed_files: list[str] = Field(default_factory=list)
+    merge_changed_files: list[str] = Field(default_factory=list)
+    generated_test_files: list[str] = Field(default_factory=list)
     excluded_files: list[str] = Field(default_factory=list)
     unified_diff: str = ""
 
