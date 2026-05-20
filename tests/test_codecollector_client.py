@@ -124,3 +124,21 @@ def test_delete_project_uses_projects_delete_command(tmp_path: Path) -> None:
         "--project-id",
         "proj-1",
     ]
+
+
+def test_reindex_project_uses_projects_reindex_full_command(tmp_path: Path) -> None:
+    runner = RecordingRunner()
+    client = CodeCollectorClient(make_settings(tmp_path), runner=runner)  # type: ignore[arg-type]
+
+    client.reindex_project("proj-1")
+
+    assert runner.commands[-1] == [
+        "python",
+        "-m",
+        "codecollector",
+        "projects",
+        "reindex",
+        "--project-id",
+        "proj-1",
+        "--full",
+    ]

@@ -34,6 +34,10 @@ class ProjectDeleteRequest(BaseModel):
     project_id: str
 
 
+class ProjectReindexRequest(BaseModel):
+    project_id: str
+
+
 @router.get("")
 def list_projects(client: CodeCollectorClient = Depends(get_codecollector_client)) -> dict[str, Any]:
     items = client.projects_list()
@@ -70,6 +74,23 @@ def onboard_project(payload: ProjectOnboardRequest, client: CodeCollectorClient 
 @router.post("/delete")
 def delete_project(payload: ProjectDeleteRequest, client: CodeCollectorClient = Depends(get_codecollector_client)) -> dict[str, Any]:
     return _delete_project(payload.project_id, client)
+
+
+@router.post("/reindex")
+def reindex_project(payload: ProjectReindexRequest, client: CodeCollectorClient = Depends(get_codecollector_client)) -> dict[str, Any]:
+    result = client.reindex_project(payload.project_id)
+    LOGGER.info(
+        "project reindex response: status=%s error_type=%s project_id=%s full_rebuild=%s indexed_files=%s search_documents_changed=%s",
+        result.get("status"),
+        result.get("error_type"),
+        result.get("project_id"),
+        result.get("full_rebuild"),
+        result.get("indexed_files"),
+        result.get("search_documents_changed"),
+    )
+    if result.get("status") == "failed":
+        return _controlled_project_response(result)
+    return {"ok": True, "result": result}
 
 
 @router.delete("/{project_id}")

@@ -1,6 +1,6 @@
 app:
   name: codeui
-  version: "0.2.24"
+  version: "0.2.31"
 
 server:
   host: "127.0.0.1"
@@ -30,6 +30,13 @@ requirements:
 
 change_requests:
   storage_dir: "data/change_requests"
+
+command_trace:
+  enabled: true
+  storage_dir: ".trace/codecollector_cli"
+  save_stdout: true
+  save_stderr: true
+  filename_label_max_chars: 80
 
 ui:
   poll_interval_ms: 1500

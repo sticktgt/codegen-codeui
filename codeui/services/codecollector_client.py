@@ -67,6 +67,10 @@ class CodeCollectorClient:
         payload = self._run_json(["projects", "delete", "--project-id", project_id], allow_nonzero_json=True)
         return payload if isinstance(payload, dict) else {"status": "failed", "message": "Unexpected codecollector response", "raw": payload}
 
+    def reindex_project(self, project_id: str) -> dict[str, Any]:
+        payload = self._run_json(["projects", "reindex", "--project-id", project_id, "--full"], allow_nonzero_json=True)
+        return payload if isinstance(payload, dict) else {"status": "failed", "message": "Unexpected codecollector response", "raw": payload}
+
     def sessions_list(self) -> Any:
         return self._run_json(["sessions", "list"])
 

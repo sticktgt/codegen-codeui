@@ -353,6 +353,7 @@ function bindToolbar() {
   $('project-select').addEventListener('change', selectProjectFromDropdown);
   $('show-register-project-btn').addEventListener('click', toggleProjectRegisterForm);
   $('register-project-form').addEventListener('submit', onboardProject);
+  $('reindex-project-btn').addEventListener('click', reindexSelectedProject);
   $('delete-project-btn').addEventListener('click', deleteSelectedProject);
   $('set-requirements-path-btn').addEventListener('click', setRequirementsPath);
   $('reload-requirements-btn').addEventListener('click', async () => { await loadRequirements(); renderRequirements(); });
@@ -434,6 +435,8 @@ function renderProjectPanel() {
   }).join('');
   const project = state.projects.find(item => item.project_id === selectedId);
   $('project-path').innerHTML = project ? renderSelectedProjectLabel(project) : 'Проект не выбран';
+  const reindexButton = $('reindex-project-btn');
+  if (reindexButton) reindexButton.disabled = !project;
   const deleteButton = $('delete-project-btn');
   if (deleteButton) deleteButton.disabled = !project;
   renderProjectActionResult();
@@ -454,7 +457,13 @@ function renderProjectActionResult() {
   }
   const { action, response } = state.projectActionResult;
   root.classList.remove('hidden');
-  root.innerHTML = action === 'delete' ? renderProjectDeleteResult(response) : renderProjectOnboardResult(response);
+  if (action === 'delete') {
+    root.innerHTML = renderProjectDeleteResult(response);
+  } else if (action === 'reindex') {
+    root.innerHTML = renderProjectReindexResult(response);
+  } else {
+    root.innerHTML = renderProjectOnboardResult(response);
+  }
   bindProjectActionResultButtons(root);
 }
 
@@ -540,6 +549,29 @@ function renderProjectDeleteResult(response) {
     <div class="project-result-body">
       ${renderCleanupSummary(cleanup)}
       ${warnings.length ? `<details class="compact-details"><summary>Предупреждения: ${warnings.length}</summary><ul>${warnings.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul></details>` : ''}
+    </div>
+  </details>`;
+}
+
+function renderProjectReindexResult(response) {
+  const result = response?.result || {};
+  if (!response?.ok || result.status === 'failed') {
+    return `<div class="project-result-card err-card"><div class="project-result-title">Индекс не обновлен.</div><div class="message error-message">${escapeHtml(response?.message || result.message || 'Операция завершилась ошибкой.')}</div>${renderProjectDetails(response)}</div>`;
+  }
+  const changed = result.search_documents_changed === true ? statusBadge('да', 'warn') : statusBadge('нет', 'ok');
+  return `<details class="project-result-card ok-card project-result-collapsed">
+    <summary><span class="project-result-title inline-title">Индекс обновлен</span></summary>
+    <div class="kv-grid compact-kv mini-kv project-result-body">
+      <div class="key">ID</div><div class="mono-text">${escapeHtml(result.project_id || '—')}</div>
+      <div class="key">Путь</div><div class="path-text">${escapeHtml(result.project_root || '—')}</div>
+      <div class="key">Полный rebuild</div><div>${result.full_rebuild ? statusBadge('да', 'ok') : statusBadge('нет')}</div>
+      <div class="key">Файлов проиндексировано</div><div>${escapeHtml(result.indexed_files ?? '—')}</div>
+      <div class="key">Модулей</div><div>${escapeHtml(result.module_count ?? '—')}</div>
+      <div class="key">Символов</div><div>${escapeHtml(result.symbol_count ?? '—')}</div>
+      <div class="key">Search documents</div><div>${escapeHtml(result.search_documents_count ?? '—')}</div>
+      <div class="key">Search documents changed</div><div>${changed}</div>
+      <div class="key">Embedded documents</div><div>${escapeHtml(result.embedded_documents_count ?? '—')}</div>
+      <div class="key">Vector sync mode</div><div class="mono-text">${escapeHtml(result.vector_sync_mode || '—')}</div>
     </div>
   </details>`;
 }
@@ -642,6 +674,18 @@ async function selectProjectFromDropdown() {
     state.uiState = await api.put('/api/ui-state', { selected_change_request_id: null });
   }
   renderAll();
+}
+
+async function reindexSelectedProject(event) {
+  const projectId = state.uiState?.selected_project_id || $('project-select').value;
+  if (!projectId) { alert('Сначала выберите проект.'); return; }
+  await withBusyButton(event.currentTarget, 'Обновление...', async () => {
+    const response = await api.post('/api/projects/reindex', { project_id: projectId });
+    console.log('project reindex response', response);
+    state.projectActionResult = { action: 'reindex', response };
+    await loadProjects();
+    renderProjectPanel();
+  });
 }
 
 async function deleteSelectedProject(event) {
@@ -969,7 +1013,7 @@ function renderCrEditForm(cr) {
     <form id="edit-cr-form" class="form-grid">
       <div class="form-row"><label>Код запроса</label><input name="code" value="${escapeHtml(cr.code || '')}" ${disabled ? 'disabled' : ''}></div>
       <div class="form-row"><label>Название</label><input name="title" value="${escapeHtml(cr.title || '')}" required ${disabled ? 'disabled' : ''}></div>
-      <div class="form-row"><label>Описание</label><textarea name="description" rows="4" required ${disabled ? 'disabled' : ''}>${escapeHtml(cr.description || '')}</textarea></div>
+      <div class="form-row cr-description-row"><label>Описание</label><textarea name="description" rows="8" required ${disabled ? 'disabled' : ''}>${escapeHtml(cr.description || '')}</textarea></div>
       <div class="form-row"><label>Ограничения</label><textarea name="constraints" rows="3" ${disabled ? 'disabled' : ''}>${escapeHtml(linesToTextarea(cr.constraints || []))}</textarea></div>
       <div class="form-row"><label>Операция</label><select name="requested_operation" ${disabled ? 'disabled' : ''}>
         <option value="" ${!cr.requested_operation ? 'selected' : ''}>определить автоматически при анализе</option>
@@ -1531,6 +1575,7 @@ async function renderRunDetail(runId) {
       api.get(`/api/runs/${encodeURIComponent(runId)}/code`),
       api.get(`/api/runs/${encodeURIComponent(runId)}/test`),
     ]);
+    const hasReview = Boolean(summary.generated_test_failure_review);
     root.innerHTML = `
       <div class="detail-scroll">
         <div class="run-main-grid">
@@ -1538,7 +1583,8 @@ async function renderRunDetail(runId) {
           ${renderRunContext(runId)}
         </div>
         <div class="tabs">
-          <button class="tab-btn active" data-tab="run-result">Результат</button>
+          ${hasReview ? '<button class="tab-btn active" data-tab="run-review">Review</button>' : ''}
+          <button class="tab-btn ${hasReview ? '' : 'active'}" data-tab="run-result">Результат</button>
           <button class="tab-btn" data-tab="run-steps">Шаги</button>
           <button class="tab-btn" data-tab="run-checks">Проверки</button>
           <button class="tab-btn" data-tab="run-apply">Применение</button>
@@ -1548,7 +1594,8 @@ async function renderRunDetail(runId) {
           <button class="tab-btn" data-tab="run-test">Тест</button>
           <button class="tab-btn" data-tab="run-context">Контекст</button>
         </div>
-        <div id="run-result" class="tab-panel active">${renderRunResult(summary)}</div>
+        ${hasReview ? `<div id="run-review" class="tab-panel active">${renderGeneratedTestFailureReview(summary.generated_test_failure_review)}</div>` : ''}
+        <div id="run-result" class="tab-panel ${hasReview ? '' : 'active'}">${renderRunResult(summary)}</div>
         <div id="run-steps" class="tab-panel">${renderSteps(steps)}</div>
         <div id="run-checks" class="tab-panel">${renderChecks(checks, summary)}</div>
         <div id="run-apply" class="tab-panel">${renderApplyPlan(summary)}</div>
@@ -1607,6 +1654,7 @@ function renderRunSummary(summary) {
       <div class="key">Новый symbol</div><div>${escapeHtml(summary.expected_new_symbol_kind || '—')}</div>
       <div class="key">Production-код</div><div>${productionState}</div>
       <div class="key">Generated test</div><div>${generatedTestState}</div>
+      <div class="key">Review verdict</div><div>${summary.generated_test_failure_review_verdict ? `<span class="mono-text">${escapeHtml(summary.generated_test_failure_review_verdict)}</span> ${badge('advisory', 'info')}` : '—'}</div>
       <div class="key">Repair</div><div>${summary.repair_used ? statusBadge('использовался', 'warn') : statusBadge('нет')}</div>
       <div class="key">Применение</div><div>${summary.merge_ready ? statusBadge('готово', 'ok') : statusBadge('не готово', 'warn')}</div>
       <div class="key">Рабочая копия</div><div class="path-text">${escapeHtml(summary.workspace_path || '—')}</div>
@@ -1619,17 +1667,56 @@ function renderRunResult(summary) {
   const lines = Array.isArray(summary.merge_plan_summary_lines) ? summary.merge_plan_summary_lines : [];
   return `<div class="compact-section">
     ${summary.primary_issue ? renderPrimaryIssue(summary.primary_issue) : '<div class="message compact-message">Основная проблема не выделена. Подробности доступны во вкладках “Проверки” и “Применение”.</div>'}
-    ${partialGeneratedTest ? `<div class="message warning-message">Ошибка относится к generated test. Production-код можно рассматривать отдельно от сгенерированного теста.</div>` : ''}
+    ${partialGeneratedTest ? `<div class="message warning-message"><b>Generated test не прошел verification.</b> Production artifact применен в staging, а generated test исключается из apply/merge. Merge остается dry-run/manual-review, а не автоматическим финальным успехом.</div>` : ''}
     <div class="kv-grid compact-kv">
       <div class="key">Статус</div><div>${statusBadge(summary.status)}</div>
       <div class="key">Проверки</div><div>${summary.verification_passed ? statusBadge('пройдены', 'ok') : statusBadge('требуют внимания', 'warn')}</div>
       <div class="key">Применение</div><div>${summary.merge_ready ? statusBadge('готово к review', 'ok') : statusBadge('не готово', 'warn')}</div>
+      <div class="key">Review verdict</div><div>${summary.generated_test_failure_review_verdict ? `<span class="mono-text">${escapeHtml(summary.generated_test_failure_review_verdict)}</span> ${badge('advisory', 'info')}` : '—'}</div>
       <div class="key">Repair</div><div>${summary.repair_used ? statusBadge('использовался', 'warn') : statusBadge('нет')}</div>
       <div class="key">Generated test</div><div>${summary.generated_test_failed || summary.generated_test_verification_failed ? statusBadge('ошибка', 'warn') : summary.has_generated_test ? statusBadge('есть', 'ok') : statusBadge('нет')}</div>
+      <div class="key">Generated test verification</div><div>${summary.generated_test_verification_failed ? statusBadge('failed', 'warn') : '—'}</div>
+      <div class="key">Generated test merge</div><div>${summary.generated_test_merge_recommended === false ? statusBadge('excluded', 'warn') : summary.generated_test_merge_recommended === true ? statusBadge('recommended', 'ok') : '—'}</div>
     </div>
     ${lines.length ? `<div class="compact-list-block full-width"><div class="compact-list-title">Краткий итог</div><ul>${lines.map(line => `<li>${escapeHtml(line)}</li>`).join('')}</ul></div>` : ''}
     ${(summary.warnings || []).length ? `<div class="compact-list-block full-width"><div class="compact-list-title">Предупреждения</div><ul>${summary.warnings.map(line => `<li>${escapeHtml(line)}</li>`).join('')}</ul></div>` : ''}
   </div>`;
+}
+
+function renderGeneratedTestFailureReview(payload) {
+  const review = payload?.review && typeof payload.review === 'object' ? payload.review : {};
+  if (!Object.keys(review).length) {
+    return '<div class="empty-state">Advisory review отсутствует.</div>';
+  }
+  return `<div class="compact-section">
+    <div class="message compact-message"><b>Advisory review.</b> Это экспертная подсказка по ошибке generated test, а не автоматическое итоговое решение pipeline. Verification warnings и merge/dry-run информацию нужно смотреть отдельно.</div>
+    <div class="kv-grid compact-kv">
+      <div class="key">Verdict</div><div class="mono-text">${escapeHtml(review.verdict || '—')}</div>
+      <div class="key">Confidence</div><div>${escapeHtml(review.confidence ?? '—')}</div>
+      <div class="key">Production code quality</div><div>${escapeHtml(review.production_code_quality || '—')}</div>
+      <div class="key">Generated test quality</div><div>${escapeHtml(review.generated_test_quality || '—')}</div>
+      <div class="key">Should keep production code</div><div>${escapeHtml(review.should_keep_production_code || '—')}</div>
+      <div class="key">Recommended action</div><div>${escapeHtml(review.recommended_action || '—')}</div>
+      <div class="key">Source</div><div>${escapeHtml(payload.source || '—')}</div>
+      <div class="key">Trace</div><div class="path-text">${escapeHtml(payload.trace_path || '—')}</div>
+    </div>
+    <div class="summary-columns">
+      ${renderCompactList('Reasons', review.reasons)}
+      ${renderCompactList('Production risks', review.production_risks)}
+      ${renderCompactList('Test issues', review.test_issues)}
+    </div>
+    <details class="compact-details"><summary>Raw review JSON</summary>${jsonBlock(payload)}</details>
+  </div>`;
+}
+
+function renderRecommendedTestsWarning(summary) {
+  const hasRecommended = (summary.recommended_tests || []).length || (summary.recommended_test_commands || []).length;
+  const generatedExcluded = summary.generated_test_merge_recommended === false
+    || summary.generated_test_verification_failed === true
+    || (summary.generated_test_excluded_files || []).length
+    || (summary.excluded_files || []).some(path => String(path).includes('test_generated_'));
+  if (!hasRecommended || !generatedExcluded) return '';
+  return '<div class="message warning-message">Recommended tests могли использоваться для verification generated test; generated test excluded from merge.</div>';
 }
 
 function renderRunContextDetails(summary) {
@@ -1638,8 +1725,11 @@ function renderRunContextDetails(summary) {
       ${renderCompactList('Файлы к применению', summary.changed_files)}
       ${renderCompactList('Исключены из применения', summary.excluded_files)}
       ${renderCompactList('Символы', summary.symbols_in_changed_files)}
+      ${renderCompactList('Рекомендуемые тесты', summary.recommended_tests)}
       ${renderCompactList('Тестовые команды', summary.recommended_test_commands)}
+      ${renderCompactList('Generated test files', summary.generated_test_files)}
       ${renderCompactList('Проблемные generated tests', summary.generated_test_failed_files)}
+      ${renderCompactList('Excluded generated tests', summary.generated_test_excluded_files)}
       ${renderImportChangesList('Добавленные импорты', summary.import_changes)}
     </div>
   </div>`;
@@ -1689,7 +1779,13 @@ function renderRunArtifactsList(artifacts) {
     if (item.trace_path) values.push(`${label} trace: ${item.trace_path}`);
     if (item.request_path) values.push(`${label} request: ${item.request_path}`);
     if (item.result_path) values.push(`${label} result: ${item.result_path}`);
+    if (item.import_changes_count != null) values.push(`${label} import changes: ${item.import_changes_count}`);
     if (item.error_type || item.message) values.push(`${label} error: ${[item.error_type, item.message].filter(Boolean).join(' — ')}`);
+  }
+  const review = artifacts.generated_test_failure_review;
+  if (review && typeof review === 'object') {
+    if (review.trace_path) values.push(`Generated test review trace: ${review.trace_path}`);
+    if (review.result_path) values.push(`Generated test review result: ${review.result_path}`);
   }
   return renderCompactList('Артефакты запуска', values);
 }
@@ -1709,8 +1805,10 @@ function renderApplyPlan(summary) {
       ${renderCompactList('Символы', summary.symbols_in_changed_files)}
       ${renderImportChangesList('Добавленные импорты', summary.import_changes)}
       ${renderCompactList('Связанные требования', summary.linked_requirements)}
-      ${renderCompactList('Рекомендуемые проверки', summary.recommended_test_commands)}
+      ${renderCompactList('Recommended tests', summary.recommended_tests)}
+      ${renderCompactList('Recommended test commands', summary.recommended_test_commands)}
     </div>
+    ${renderRecommendedTestsWarning(summary)}
     ${lines.length ? `<div class="compact-list-block full-width"><div class="compact-list-title">Комментарий</div><ul>${lines.map(line => `<li>${escapeHtml(line)}</li>`).join('')}</ul></div>` : ''}
     ${(summary.warnings || []).length ? `<div class="compact-list-block full-width"><div class="compact-list-title">Предупреждения</div><ul>${summary.warnings.map(line => `<li>${escapeHtml(line)}</li>`).join('')}</ul></div>` : ''}
   </div>`;
@@ -1720,10 +1818,16 @@ function renderApplyPlan(summary) {
 function renderDiff(diff) {
   const excluded = Array.isArray(diff?.excluded_files) ? diff.excluded_files : [];
   const changed = Array.isArray(diff?.changed_files) ? diff.changed_files : [];
+  const mergeChanged = Array.isArray(diff?.merge_changed_files) ? diff.merge_changed_files : [];
+  const generatedTests = Array.isArray(diff?.generated_test_files) ? diff.generated_test_files : [];
   return `<div class="compact-section">
-    ${renderCompactList('Файлы в diff', changed)}
-    ${excluded.length ? renderCompactList('Исключены из применения', excluded) : ''}
-    ${excluded.length ? '<div class="message compact-message">Diff для review фильтруется с учетом исключенных файлов, если backend передал excluded_files.</div>' : ''}
+    <div class="message compact-message">Файлы workspace diff и файлы, рекомендованные к merge, показаны отдельно. Excluded files сохраняют casing из JSON.</div>
+    <div class="summary-columns">
+      ${renderCompactList('Измененные файлы workspace', changed)}
+      ${renderCompactList('Рекомендованы к merge', mergeChanged)}
+      ${renderCompactList('Generated test files', generatedTests)}
+      ${excluded.length ? renderCompactList('Excluded files', excluded) : ''}
+    </div>
     ${codeBlock(diff?.unified_diff || '')}
   </div>`;
 }
@@ -1733,6 +1837,7 @@ function renderResources(summary) {
     usageRow('Генерация кода', summary.code_generation_usage),
     usageRow('Генерация теста', summary.test_generation_usage),
     usageRow('Repair', summary.repair_generation_usage),
+    usageRow('Generated test review', summary.generated_test_review_usage),
     usageRow('Embeddings', summary.embedding_usage, true),
   ].filter(Boolean).join('');
   const table = rows ? `<table class="table compact-usage-table"><thead><tr><th>Этап</th><th>Вызовы</th><th>Prompt</th><th>Output</th><th>Total</th><th>Длительность</th><th>Дополнительно</th></tr></thead><tbody>${rows}</tbody></table>` : '<div class="empty-state">Usage-метрики для этого запуска отсутствуют.</div>';
@@ -1801,8 +1906,16 @@ function formatNumber(value) {
 }
 function renderSteps(steps) {
   return `<table class="table"><thead><tr><th>Шаг</th><th>Статус</th><th>Время</th><th>Токены</th><th>Описание</th></tr></thead><tbody>${(steps || []).map(step => `
-    <tr><td>${escapeHtml(step.step_name)}</td><td>${statusBadge(step.status)}</td><td>${escapeHtml(step.duration_ms ?? '—')} мс</td><td>${escapeHtml(step.usage?.total_tokens ?? '—')}</td><td>${escapeHtml(step.summary || '')}</td></tr>
+    <tr class="${step.step_name === 'generated_test_failure_review' ? 'advisory-step-row' : ''}"><td>${renderStepName(step)}</td><td>${statusBadge(step.status)}</td><td>${escapeHtml(step.duration_ms ?? '—')} мс</td><td>${escapeHtml(step.usage?.total_tokens ?? '—')}</td><td>${escapeHtml(step.summary || '')}</td></tr>
   `).join('')}</tbody></table>`;
+}
+
+function renderStepName(step) {
+  const name = escapeHtml(step?.step_name || 'unknown');
+  if (step?.step_name === 'generated_test_failure_review') {
+    return `${name} ${badge('advisory review', 'info')}`;
+  }
+  return name;
 }
 function renderChecks(checks, summary = null) {
   const list = Array.isArray(checks) ? checks : [];
@@ -1835,11 +1948,20 @@ function renderChecksTable(items) {
   return `<table class="table checks-table"><thead><tr><th>Проверка</th><th>Результат</th><th>Уровень</th><th>Проблемы</th></tr></thead><tbody>${items.map(check => `
     <tr>
       <td>${escapeHtml(check.name)}</td>
-      <td>${check.ok ? statusBadge('ok', 'ok') : statusBadge('ошибка', 'err')}</td>
+      <td>${checkResultBadge(check)}</td>
       <td>${escapeHtml(check.severity || '')}</td>
       <td>${renderIssues(check.issues, check.details)}</td>
     </tr>
   `).join('')}</tbody></table>`;
+}
+
+function checkResultBadge(check) {
+  if (check?.ok) return statusBadge('ok', 'ok');
+  const severity = String(check?.severity || '').toLowerCase();
+  if (severity === 'warning' || hasPossibleContractLostWarning(check?.details)) {
+    return statusBadge('warning', 'warn');
+  }
+  return statusBadge('ошибка', 'err');
 }
 
 function renderIssues(issues, details) {
@@ -1851,11 +1973,38 @@ function renderIssues(issues, details) {
     ? `<div class="issue-list">${normalized.map(renderIssue).join('')}</div>`
     : '';
 
+  const advisoryDiagnostics = detailObj ? renderKnownSemanticDiagnostics(detailObj) : '';
   const detailsHtml = detailObj
     ? `<details class="compact-details"><summary>Детали проверки</summary>${jsonBlock(detailObj)}</details>`
     : '';
 
-  return `${issueHtml}${detailsHtml}`;
+  return `${issueHtml}${advisoryDiagnostics}${detailsHtml}`;
+}
+
+function hasPossibleContractLostWarning(details) {
+  const diagnostic = details?.possible_existing_method_contract_lost;
+  return Array.isArray(diagnostic?.warnings) && diagnostic.warnings.length > 0;
+}
+
+function renderKnownSemanticDiagnostics(details) {
+  const diagnostic = details?.possible_existing_method_contract_lost;
+  const warnings = Array.isArray(diagnostic?.warnings) ? diagnostic.warnings : [];
+  if (!warnings.length) return '';
+  return `<div class="issue-list advisory-warning-list">
+    <div class="message warning-message compact-message">Advisory warning: возможна потеря поведения существующего публичного метода. Это не hard failure, но требует ручного review.</div>
+    ${warnings.map(warning => {
+      const contracts = Array.isArray(warning.missing_exception_contracts) ? warning.missing_exception_contracts.join(', ') : '';
+      const meta = [
+        warning.method ? `Метод: ${escapeHtml(warning.method)}` : '',
+        contracts ? `Потерянные exception contracts: ${escapeHtml(contracts)}` : '',
+      ].filter(Boolean).join('<br>');
+      return `<div class="issue-item warning-issue">
+        <div class="issue-head"><span class="issue-code">${escapeHtml(warning.code || 'possible_existing_method_contract_lost')}</span><span class="issue-severity">warning</span></div>
+        <div class="issue-message">${escapeHtml(warning.message || 'Возможна потеря существующего контракта публичного метода.')}</div>
+        ${meta ? `<div class="issue-meta">${meta}</div>` : ''}
+      </div>`;
+    }).join('')}
+  </div>`;
 }
 
 function renderIssue(issue) {

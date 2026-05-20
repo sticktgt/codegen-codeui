@@ -412,9 +412,21 @@ details summary {
 /* Analyze review additions */
 .analysis-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
 }
+
+@media (max-width: 1500px) {
+  .analysis-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 900px) {
+  .analysis-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .analysis-box {
   border: 1px solid var(--line-soft);
   border-radius: 6px;
@@ -510,9 +522,15 @@ details summary {
 }
 .cr-main-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(280px, .8fr);
+  grid-template-columns: minmax(0, 1.35fr) minmax(300px, .95fr);
   gap: 8px;
   align-items: start;
+}
+.cr-fields-card .form-grid {
+  max-width: none;
+}
+.cr-description-row textarea {
+  min-height: 190px;
 }
 .cr-main-grid .card,
 .cr-side-column .card {
@@ -620,4 +638,15 @@ details summary {
 .muted-list-item {
   background: #f9fafb;
   border-style: dashed;
+}
+
+.advisory-step-row {
+  background: #f8fbff;
+}
+.advisory-warning-list {
+  margin-top: 6px;
+}
+.warning-issue {
+  border-left: 3px solid #f79009;
+  background: #fffcf5;
 }
