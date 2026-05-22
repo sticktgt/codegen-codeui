@@ -110,6 +110,13 @@ function canApplyCr(cr) {
   const mergeReady = summary.merge_ready === true || mergePlan.ready_for_manual_merge_review === true;
   return mergeReady || status === 'ready_for_merge_review';
 }
+function canApplyRun(summary) {
+  if (!summary?.run_id || !summary?.workspace_id) return false;
+  const linkedCr = findCrForRun(summary.run_id);
+  if (linkedCr && isFinalCr(linkedCr)) return false;
+  const status = String(summary.status || '').toLowerCase();
+  return summary.merge_ready === true || status === 'ready_for_merge_review';
+}
 
 function linesFromTextarea(value) {
   return String(value || '').split('\n').map(v => v.trim()).filter(Boolean);
@@ -1476,6 +1483,20 @@ async function applyLastRun(crId, button) {
   });
 }
 
+async function applySelectedRun(runId, button) {
+  if (!confirm('Применить workspace выбранного запуска в основной проект?')) return;
+  await withBusyButton(button, 'Применение...', async () => {
+    const result = await api.post(`/api/runs/${encodeURIComponent(runId)}/apply`, {});
+    showApplyResultMessage(result?.apply_result);
+    await Promise.all([loadChangeRequests(), loadRuns()]);
+    renderCrList();
+    renderSelectedRequirementDetailIfVisible();
+    renderRuns();
+    await renderRunDetail(runId);
+    if (state.selectedCrId) renderSelectedCr();
+  });
+}
+
 function showApplyResultMessage(result) {
   if (!result || typeof result !== 'object') return;
   const applied = Array.isArray(result.applied_files) ? result.applied_files : [];
@@ -1607,6 +1628,8 @@ async function renderRunDetail(runId) {
       </div>
     `;
     bindTabs(root);
+    const applyRunBtn = $('apply-selected-run-btn');
+    if (applyRunBtn) applyRunBtn.addEventListener('click', event => applySelectedRun(runId, event.currentTarget));
   } catch (error) {
     root.innerHTML = `<div class="empty-state">${escapeHtml(error.message)}</div>`;
   }
@@ -1657,8 +1680,10 @@ function renderRunSummary(summary) {
       <div class="key">Review verdict</div><div>${summary.generated_test_failure_review_verdict ? `<span class="mono-text">${escapeHtml(summary.generated_test_failure_review_verdict)}</span> ${badge('advisory', 'info')}` : '—'}</div>
       <div class="key">Repair</div><div>${summary.repair_used ? statusBadge('использовался', 'warn') : statusBadge('нет')}</div>
       <div class="key">Применение</div><div>${summary.merge_ready ? statusBadge('готово', 'ok') : statusBadge('не готово', 'warn')}</div>
+      <div class="key">Workspace ID</div><div class="mono-text">${escapeHtml(summary.workspace_id || '—')}</div>
       <div class="key">Рабочая копия</div><div class="path-text">${escapeHtml(summary.workspace_path || '—')}</div>
     </div>
+    ${canApplyRun(summary) ? '<div class="action-row run-summary-actions"><button class="btn" id="apply-selected-run-btn">Применить</button><span class="muted">Будет применен workspace выбранного запуска.</span></div>' : ''}
   </div>`;
 }
 

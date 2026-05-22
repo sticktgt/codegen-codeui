@@ -193,3 +193,18 @@ def test_repair_usage_is_not_shown_on_repair_static_semantics_followup_step(tmp_
     assert repair_step.usage.total_tokens == 9073.0
     assert followup_step.usage is None
 
+
+def test_summary_extracts_workspace_id_from_top_level_or_workspace_path(tmp_path: Path) -> None:
+    service = make_service(
+        tmp_path,
+        {
+            "workspace_path": "/home/stickt/llm/codecollector/.workspaces/src-20260514T124459.362849Z-a752a8",
+            "result_summary": {"status": "ready_for_merge_review"},
+            "merge_plan": {"ready_for_manual_merge_review": True},
+        },
+    )
+
+    summary = service.summary("pipeline-20260514T120000.000000Z-test")
+
+    assert summary.workspace_id == "src-20260514T124459.362849Z-a752a8"
+    assert summary.merge_ready is True

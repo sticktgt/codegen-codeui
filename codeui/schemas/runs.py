@@ -70,6 +70,7 @@ class RunSummaryView(BaseModel):
     excluded_files: list[str] = Field(default_factory=list)
     applied_files: list[str] = Field(default_factory=list)
     symbols_in_changed_files: list[str] = Field(default_factory=list)
+    workspace_id: str | None = None
     workspace_path: str | None = None
     verification_passed: bool | None = None
     has_generated_test: bool = False

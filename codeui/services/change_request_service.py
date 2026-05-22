@@ -185,7 +185,14 @@ class ChangeRequestService:
         LOGGER.warning("Marked change request as failed cr_id=%s error=%s", cr_id, error)
         return view
 
-    def mark_applied(self, cr_id: str, result: dict[str, Any]) -> ChangeRequestView:
+    def mark_applied(
+        self,
+        cr_id: str,
+        result: dict[str, Any],
+        *,
+        run_id: str | None = None,
+        workspace_id: str | None = None,
+    ) -> ChangeRequestView:
         view = self.get_change_request(cr_id)
         if self.is_final(view):
             raise ApiError(
@@ -194,13 +201,17 @@ class ChangeRequestService:
                 status_code=409,
                 details={"cr_id": cr_id, "status": view.status, "applied_run_id": view.applied_run_id},
             )
-        if not view.last_run_id:
-            raise ApiError("RUN_NOT_SELECTED", "У запроса нет последнего запуска для применения.", status_code=409)
+        applied_run_id = run_id or view.last_run_id
+        if not applied_run_id:
+            raise ApiError("RUN_NOT_SELECTED", "У запроса нет запуска для применения.", status_code=409)
         view.status = "applied"
         view.applied_at = datetime.now(timezone.utc)
-        view.applied_run_id = view.last_run_id
+        view.applied_run_id = applied_run_id
         view.updated_at = datetime.now(timezone.utc)
         view.raw["last_apply_result"] = result
+        view.raw["applied_run_id"] = applied_run_id
+        if workspace_id:
+            view.raw["applied_workspace_id"] = workspace_id
         self._save(view)
         return view
 

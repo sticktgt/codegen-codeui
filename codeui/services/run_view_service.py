@@ -120,6 +120,8 @@ class RunViewService:
         parent_qualname = result_summary.get("parent_qualname") or execution.get("parent_qualname") or apply_artifact.get("parent_qualname") or code_artifact.get("parent_qualname")
         expected_new_symbol_kind = result_summary.get("expected_new_symbol_kind") or execution.get("expected_new_symbol_kind") or apply_artifact.get("expected_new_symbol_kind") or code_artifact.get("expected_new_symbol_kind")
         target_role = result_summary.get("target_role") or execution.get("target_role") or self._infer_target_role(final_operation, insert_scope, parent_qualname)
+        workspace_path = execution.get("workspace_path") or result_summary.get("workspace_path") or merge_plan.get("workspace_path") or payload.get("workspace_path")
+        workspace_id = self._workspace_id(payload, execution, result_summary, merge_plan, workspace_path)
         repair_generation = self._dict(payload.get("repair_generation"))
         repair_summary = self._dict_or_none(repair_generation.get("result_summary"))
         run_artifacts = self._run_artifacts_summary(run_id, payload, generation_result, repair_result)
@@ -154,7 +156,8 @@ class RunViewService:
             excluded_files=excluded_files,
             applied_files=applied_files,
             symbols_in_changed_files=self._list(execution.get("symbols_in_changed_files") or merge_plan.get("symbols_in_changed_files")),
-            workspace_path=execution.get("workspace_path") or merge_plan.get("workspace_path"),
+            workspace_id=workspace_id,
+            workspace_path=workspace_path,
             verification_passed=execution.get("verification_passed") if "verification_passed" in execution else verification.get("passed"),
             has_generated_test=bool(result_summary.get("has_generated_test") or execution.get("has_generated_test") or generated_test_apply.get("count") or generated_test_apply.get("applied_tests") or generated_test_files),
             generated_test_files=generated_test_files,
@@ -294,6 +297,31 @@ class RunViewService:
             "generated_test_review_result": self._artifacts.read_optional_json(run_id, "generated_test_review_result.json"),
             "generated_test_failure_review_result": self._artifacts.read_optional_json(run_id, "generated_test_failure_review_result.json"),
         }
+
+
+    @staticmethod
+    def _workspace_id(
+        payload: dict[str, Any],
+        execution: dict[str, Any],
+        result_summary: dict[str, Any],
+        merge_plan: dict[str, Any],
+        workspace_path: Any,
+    ) -> str | None:
+        for value in (
+            payload.get("workspace_id"),
+            execution.get("workspace_id"),
+            result_summary.get("workspace_id"),
+            merge_plan.get("workspace_id"),
+            payload.get("last_workspace_id"),
+            execution.get("last_workspace_id"),
+        ):
+            if value:
+                return str(value)
+        if workspace_path:
+            normalized = str(workspace_path).replace("\\", "/").rstrip("/")
+            if normalized:
+                return normalized.rsplit("/", 1)[-1]
+        return None
 
     def _generated_test_failure_review(self, run_id: str, payload: dict[str, Any]) -> dict[str, Any] | None:
         candidates: list[tuple[str, dict[str, Any]]] = []
