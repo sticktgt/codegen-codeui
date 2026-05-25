@@ -35,11 +35,9 @@ class UiStateService:
         updated = UiStateView.model_validate(data)
         self.save_state(updated)
         LOGGER.info(
-            "UI state updated selected_project_id=%s requirements_file_path=%s selected_requirement_ids=%s selected_change_request_id=%s",
+            "UI state updated selected_project_id=%s requirements_file_path=%s",
             updated.selected_project_id,
             updated.requirements_file_path,
-            updated.selected_requirement_ids,
-            updated.selected_change_request_id,
         )
         return updated
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Query
 
-from codeui.dependencies import get_change_request_service, get_codecollector_client, get_run_view_service, get_ui_state_service
+from codeui.dependencies import get_change_request_service, get_codecollector_client, get_project_lock_service, get_run_view_service
 from codeui.errors import ApiError
 from codeui.schemas.change_requests import (
     AnalyzeRequest,
@@ -14,11 +14,10 @@ from codeui.schemas.change_requests import (
     SelectTargetRequest,
 )
 from codeui.schemas.runs import RunListItem, RunListResponse
-from codeui.schemas.ui_state import UiStateUpdate
 from codeui.services.change_request_service import ChangeRequestService
 from codeui.services.codecollector_client import CodeCollectorClient
 from codeui.services.run_view_service import RunViewService
-from codeui.services.ui_state_service import UiStateService
+from codeui.services.project_lock_service import ProjectOperationLockService
 
 router = APIRouter(prefix="/api/change-requests", tags=["change-requests"])
 
@@ -36,11 +35,8 @@ def list_change_requests(
 def create_change_request(
     payload: ChangeRequestCreate,
     service: ChangeRequestService = Depends(get_change_request_service),
-    ui_state: UiStateService = Depends(get_ui_state_service),
 ) -> ChangeRequestView:
-    created = service.create_change_request(payload)
-    ui_state.update_state(UiStateUpdate(selected_change_request_id=created.cr_id))
-    return created
+    return service.create_change_request(payload)
 
 
 @router.get("/{cr_id}", response_model=ChangeRequestView)
@@ -61,13 +57,8 @@ def update_change_request(
 def delete_change_request(
     cr_id: str,
     service: ChangeRequestService = Depends(get_change_request_service),
-    ui_state: UiStateService = Depends(get_ui_state_service),
 ) -> dict[str, str]:
-    deleted = service.delete_change_request(cr_id)
-    current = ui_state.get_state()
-    if current.selected_change_request_id == cr_id:
-        ui_state.update_state(UiStateUpdate(selected_change_request_id=None))
-    return deleted
+    return service.delete_change_request(cr_id)
 
 
 @router.get("/{cr_id}/runs", response_model=RunListResponse)
@@ -254,6 +245,7 @@ def apply_last_run(
     service: ChangeRequestService = Depends(get_change_request_service),
     run_service: RunViewService = Depends(get_run_view_service),
     client: CodeCollectorClient = Depends(get_codecollector_client),
+    locks: ProjectOperationLockService = Depends(get_project_lock_service),
 ) -> dict:
     cr = service.get_change_request(cr_id)
     if service.is_final(cr):
@@ -279,6 +271,7 @@ def apply_last_run(
                 "verification_passed": summary.verification_passed,
             },
         )
-    result = client.workspace_apply(cr.last_workspace_id)
+    with locks.acquire(cr.project_id, "apply_workspace", details={"cr_id": cr_id, "run_id": cr.last_run_id, "workspace_id": cr.last_workspace_id}):
+        result = client.workspace_apply(cr.last_workspace_id)
     updated = service.mark_applied(cr_id, result)
     return {"change_request": updated.model_dump(mode="json"), "apply_result": result}

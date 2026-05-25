@@ -529,8 +529,12 @@ details summary {
 .cr-fields-card .form-grid {
   max-width: none;
 }
-.cr-description-row textarea {
-  min-height: 190px;
+.cr-balanced-textarea-row textarea {
+  min-height: 140px;
+}
+.insert-scope-row .full-row-hint {
+  grid-column: 1 / -1;
+  margin-top: -4px;
 }
 .cr-main-grid .card,
 .cr-side-column .card {

@@ -151,14 +151,44 @@ function getProjectTitleById(projectId) {
   const project = state.projects.find(item => item.project_id === projectId);
   return project?.project_name || project?.name || projectId || '—';
 }
+function readSessionValue(key) {
+  try { return window.sessionStorage.getItem(`codeui:${key}`); }
+  catch (_) { return null; }
+}
+function writeSessionValue(key, value) {
+  try {
+    if (value == null || value === '') window.sessionStorage.removeItem(`codeui:${key}`);
+    else window.sessionStorage.setItem(`codeui:${key}`, String(value));
+  } catch (_) {}
+}
+function restoreSessionSelection() {
+  state.selectedRequirementId = readSessionValue('selectedRequirementId') || null;
+  state.selectedCrId = readSessionValue('selectedCrId') || null;
+  state.selectedRunId = readSessionValue('selectedRunId') || null;
+}
+function setSelectedRequirementId(value) {
+  state.selectedRequirementId = value || null;
+  writeSessionValue('selectedRequirementId', state.selectedRequirementId);
+}
+function setSelectedCrId(value) {
+  state.selectedCrId = value || null;
+  writeSessionValue('selectedCrId', state.selectedCrId);
+}
+function setSelectedRunId(value) {
+  state.selectedRunId = value || null;
+  writeSessionValue('selectedRunId', state.selectedRunId);
+}
+function clearProjectScopedLocalSelection() {
+  setSelectedCrId(null);
+  setSelectedRunId(null);
+}
 function resetProjectScopedSelection() {
   const selectedCr = state.changeRequests.find(item => item.cr_id === state.selectedCrId);
   if (selectedCr && !crMatchesSelectedProject(selectedCr)) {
-    state.selectedCrId = null;
-    if (state.uiState) state.uiState.selected_change_request_id = null;
+    setSelectedCrId(null);
   }
   if (state.selectedRunId && !getVisibleRuns().some(run => run.run_id === state.selectedRunId)) {
-    state.selectedRunId = null;
+    setSelectedRunId(null);
   }
 }
 function crHasPipelineState(cr) {
@@ -387,8 +417,7 @@ async function loadAll() {
     state.changeRequests = changeRequests.items || [];
     state.runs = runs.items || [];
     state.runsAllLoaded = false;
-    state.selectedRequirementId = uiState.selected_requirement_ids?.[0] || null;
-    state.selectedCrId = uiState.selected_change_request_id || null;
+    restoreSessionSelection();
     await loadRequirements();
     renderAll();
     setApiStatus('API');
@@ -611,8 +640,9 @@ function bindProjectActionResultButtons(root) {
       const projectId = button.dataset.projectId;
       if (!projectId) return;
       state.uiState = await api.post('/api/ui-state/select-project', { project_id: projectId });
+      clearProjectScopedLocalSelection();
       await loadProjects();
-      renderProjectPanel();
+      renderAll();
     });
   });
   root.querySelectorAll('[data-project-action="delete-existing"]').forEach(button => {
@@ -656,6 +686,7 @@ async function onboardProject(event) {
     const result = response.result || {};
     if (response.ok && result.project_id) {
       state.uiState = await api.post('/api/ui-state/select-project', { project_id: result.project_id });
+      clearProjectScopedLocalSelection();
       $('register-project-panel').classList.add('hidden');
       form.reset();
       form.querySelector('[name="full"]').checked = true;
@@ -667,18 +698,15 @@ async function onboardProject(event) {
 async function selectProjectFromDropdown() {
   const projectId = $('project-select').value;
   if (!projectId) {
-    state.uiState = await api.put('/api/ui-state', { selected_project_id: null, selected_change_request_id: null });
-    state.selectedCrId = null;
-    state.selectedRunId = null;
+    state.uiState = await api.put('/api/ui-state', { selected_project_id: null });
+    clearProjectScopedLocalSelection();
     renderAll();
     return;
   }
   state.uiState = await api.post('/api/ui-state/select-project', { project_id: projectId });
   const selectedCr = state.changeRequests.find(item => item.cr_id === state.selectedCrId);
   if (selectedCr && selectedCr.project_id !== projectId) {
-    state.selectedCrId = null;
-    state.selectedRunId = null;
-    state.uiState = await api.put('/api/ui-state', { selected_change_request_id: null });
+    clearProjectScopedLocalSelection();
   }
   renderAll();
 }
@@ -707,9 +735,8 @@ async function deleteSelectedProject(event) {
     state.projectActionResult = { action: 'delete', response };
     await loadProjects();
     if (state.uiState?.selected_project_id === projectId) {
-      state.uiState = await api.put('/api/ui-state', { selected_project_id: null, selected_change_request_id: null });
-      state.selectedCrId = null;
-      state.selectedRunId = null;
+      state.uiState = await api.put('/api/ui-state', { selected_project_id: null });
+      clearProjectScopedLocalSelection();
     }
     renderAll();
   });
@@ -720,7 +747,7 @@ async function setRequirementsPath() {
   if (!path) return;
   try {
     state.uiState = await api.post('/api/ui-state/requirements-file', { path });
-    state.selectedRequirementId = null;
+    setSelectedRequirementId(null);
     await loadRequirements();
     renderRequirements();
   } catch (error) { alert(error.message); }
@@ -760,9 +787,7 @@ function renderTreeNodes(nodes, level) {
 }
 
 async function selectRequirement(requirementId) {
-  state.selectedRequirementId = requirementId;
-  try { state.uiState = await api.put('/api/ui-state', { selected_requirement_ids: [requirementId] }); }
-  catch (error) { alert(error.message); }
+  setSelectedRequirementId(requirementId);
   renderRequirements();
 }
 
@@ -840,8 +865,7 @@ function bindCreateCrForm(requirement) {
     const button = form.querySelector('button[type="submit"]');
     await withBusyButton(button, 'Создание...', async () => {
       const created = await api.post('/api/change-requests', payload);
-      state.selectedCrId = created.cr_id;
-      state.uiState = await api.put('/api/ui-state', { selected_change_request_id: created.cr_id });
+      setSelectedCrId(created.cr_id);
       await loadChangeRequests();
       renderRequirementDetail(requirement);
       renderCrList();
@@ -875,7 +899,7 @@ function renderOtherProjectRelatedCrs(items) {
 }
 
 function openCr(crId) {
-  state.selectedCrId = crId;
+  setSelectedCrId(crId);
   setActiveView('requests-view');
   renderCrList();
   renderSelectedCr();
@@ -904,8 +928,7 @@ function renderCrList() {
     </div>
   `).join('');
   root.querySelectorAll('[data-cr-id]').forEach(el => el.addEventListener('click', async () => {
-    state.selectedCrId = el.dataset.crId;
-    try { state.uiState = await api.put('/api/ui-state', { selected_change_request_id: state.selectedCrId }); } catch (_) {}
+    setSelectedCrId(el.dataset.crId);
     renderCrList();
     renderSelectedCr();
   }));
@@ -1020,19 +1043,18 @@ function renderCrEditForm(cr) {
     <form id="edit-cr-form" class="form-grid">
       <div class="form-row"><label>Код запроса</label><input name="code" value="${escapeHtml(cr.code || '')}" ${disabled ? 'disabled' : ''}></div>
       <div class="form-row"><label>Название</label><input name="title" value="${escapeHtml(cr.title || '')}" required ${disabled ? 'disabled' : ''}></div>
-      <div class="form-row cr-description-row"><label>Описание</label><textarea name="description" rows="8" required ${disabled ? 'disabled' : ''}>${escapeHtml(cr.description || '')}</textarea></div>
-      <div class="form-row"><label>Ограничения</label><textarea name="constraints" rows="3" ${disabled ? 'disabled' : ''}>${escapeHtml(linesToTextarea(cr.constraints || []))}</textarea></div>
+      <div class="form-row cr-balanced-textarea-row"><label>Описание</label><textarea name="description" rows="7" required ${disabled ? 'disabled' : ''}>${escapeHtml(cr.description || '')}</textarea></div>
+      <div class="form-row cr-balanced-textarea-row"><label>Ограничения</label><textarea name="constraints" rows="7" ${disabled ? 'disabled' : ''}>${escapeHtml(linesToTextarea(cr.constraints || []))}</textarea></div>
       <div class="form-row"><label>Операция</label><select name="requested_operation" ${disabled ? 'disabled' : ''}>
         <option value="" ${!cr.requested_operation ? 'selected' : ''}>определить автоматически при анализе</option>
         <option value="replace_symbol" ${cr.requested_operation === 'replace_symbol' ? 'selected' : ''}>заменить существующий код</option>
         <option value="insert_after_symbol" ${cr.requested_operation === 'insert_after_symbol' ? 'selected' : ''}>добавить после существующего кода</option>
       </select></div>
-      <div class="form-row"><label>Область вставки</label><select name="insert_scope" ${disabled ? 'disabled' : ''}>
+      <div class="form-row insert-scope-row"><label>Область вставки</label><select name="insert_scope" ${disabled ? 'disabled' : ''}>
         <option value="" ${!cr.insert_scope ? 'selected' : ''}>не применимо / определить при анализе</option>
         <option value="module_body" ${cr.insert_scope === 'module_body' ? 'selected' : ''}>добавление в модуль</option>
         <option value="class_body" ${cr.insert_scope === 'class_body' ? 'selected' : ''}>добавление внутрь класса</option>
-      </select><span class="field-hint">Используется для операции «добавить после существующего кода».</span></div>
-      <div class="form-row"><label>Примечания</label><textarea name="notes" rows="2" ${disabled ? 'disabled' : ''}>${escapeHtml(linesToTextarea(cr.notes || []))}</textarea></div>
+      </select><span class="field-hint full-row-hint">Используется для операции «добавить после существующего кода».</span></div>
       <div class="action-row">
         <button class="btn" type="submit" ${disabled ? 'disabled' : ''}>Сохранить изменения</button>
         ${crHasPipelineState(cr) && !disabled ? '<span class="message">При сохранении анализ, выбранное место и список запусков будут сброшены.</span>' : ''}
@@ -1042,12 +1064,28 @@ function renderCrEditForm(cr) {
   `;
 }
 
+function applyCrEditDraftToCr(cr, form) {
+  if (!cr || !form) return;
+  const data = new FormData(form);
+  const code = String(data.get('code') || '');
+  cr.code = code.trim() ? code : null;
+  cr.title = String(data.get('title') || '');
+  cr.description = String(data.get('description') || '');
+  cr.constraints = linesFromTextarea(data.get('constraints'));
+  if (form.querySelector('[name="notes"]')) {
+    cr.notes = linesFromTextarea(data.get('notes'));
+  }
+  cr.requested_operation = data.get('requested_operation') || null;
+  cr.insert_scope = normalizeInsertScopeValue(data.get('insert_scope'));
+}
+
 function bindCrEditForm(cr) {
   const form = $('edit-cr-form');
   if (!form) return;
   const operationSelect = form.querySelector('[name="requested_operation"]');
   if (operationSelect) {
     operationSelect.addEventListener('change', () => {
+      applyCrEditDraftToCr(cr, form);
       const value = operationSelect.value || null;
       cr.requested_operation = value;
       if (value !== 'insert_after_symbol') cr.insert_scope = null;
@@ -1059,7 +1097,8 @@ function bindCrEditForm(cr) {
   const insertScopeSelect = form.querySelector('[name="insert_scope"]');
   if (insertScopeSelect) {
     insertScopeSelect.addEventListener('change', () => {
-      const value = insertScopeSelect.value || null;
+      applyCrEditDraftToCr(cr, form);
+      const value = normalizeInsertScopeValue(insertScopeSelect.value);
       cr.insert_scope = value;
       if (!cr.raw || typeof cr.raw !== 'object') cr.raw = {};
       cr.raw.insert_scope_selection_source = value ? 'user' : 'none';
@@ -1083,14 +1122,16 @@ function bindCrEditForm(cr) {
       title,
       description,
       constraints: linesFromTextarea(data.get('constraints')),
-      notes: linesFromTextarea(data.get('notes')),
       requested_operation: data.get('requested_operation') || null,
       insert_scope: data.get('insert_scope') || null,
     };
+    if (form.querySelector('[name="notes"]')) {
+      payload.notes = linesFromTextarea(data.get('notes'));
+    }
     const button = form.querySelector('button[type="submit"]');
     await withBusyButton(button, 'Сохранение...', async () => {
       const updated = await api.put(`/api/change-requests/${encodeURIComponent(cr.cr_id)}`, payload);
-      state.selectedCrId = updated.cr_id;
+      setSelectedCrId(updated.cr_id);
       await loadChangeRequests();
       renderCrList();
       renderSelectedCr();
@@ -1373,7 +1414,7 @@ function upsertChangeRequest(updatedCr) {
   const index = state.changeRequests.findIndex(item => item.cr_id === updatedCr.cr_id);
   if (index >= 0) state.changeRequests[index] = updatedCr;
   else state.changeRequests.unshift(updatedCr);
-  state.selectedCrId = updatedCr.cr_id;
+  setSelectedCrId(updatedCr.cr_id);
 }
 
 async function analyzeCr(crId, button) {
@@ -1514,8 +1555,7 @@ async function deleteCr(crId, button) {
   if (!confirm('Удалить запрос на изменение?')) return;
   await withBusyButton(button, 'Удаление...', async () => {
     await api.delete(`/api/change-requests/${encodeURIComponent(crId)}`);
-    state.selectedCrId = null;
-    await api.put('/api/ui-state', { selected_change_request_id: null }).catch(() => null);
+    setSelectedCrId(null);
     await loadChangeRequests();
     renderCrList();
     renderSelectedCr();
@@ -1558,7 +1598,7 @@ function renderRuns() {
 
 async function openRunView(runId) {
   if (!runId) return;
-  state.selectedRunId = runId;
+  setSelectedRunId(runId);
   await ensureRunInList(runId);
   setActiveView('runs-view');
   renderRuns();

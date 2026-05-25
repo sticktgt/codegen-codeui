@@ -2,12 +2,13 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Query
 
-from codeui.dependencies import get_change_request_service, get_codecollector_client, get_run_view_service
+from codeui.dependencies import get_change_request_service, get_codecollector_client, get_project_lock_service, get_run_view_service
 from codeui.errors import ApiError
 from codeui.schemas.runs import ArtifactView, CheckView, DiffView, RunListResponse, RunSummaryView, StepView
 from codeui.services.change_request_service import ChangeRequestService
 from codeui.services.codecollector_client import CodeCollectorClient
 from codeui.services.run_view_service import RunViewService
+from codeui.services.project_lock_service import ProjectOperationLockService
 
 router = APIRouter(prefix="/api/runs", tags=["runs"])
 
@@ -60,6 +61,7 @@ def apply_run(
     service: RunViewService = Depends(get_run_view_service),
     change_requests: ChangeRequestService = Depends(get_change_request_service),
     client: CodeCollectorClient = Depends(get_codecollector_client),
+    locks: ProjectOperationLockService = Depends(get_project_lock_service),
 ) -> dict:
     summary = service.summary(run_id)
     if summary.merge_ready is not True:
@@ -98,7 +100,9 @@ def apply_run(
             },
         )
 
-    result = client.workspace_apply(summary.workspace_id)
+    lock_project_id = linked_cr.project_id if linked_cr else f"workspace-{summary.workspace_id}"
+    with locks.acquire(lock_project_id, "apply_workspace", details={"run_id": run_id, "workspace_id": summary.workspace_id}):
+        result = client.workspace_apply(summary.workspace_id)
     response: dict = {"run_id": run_id, "workspace_id": summary.workspace_id, "apply_result": result}
     if linked_cr:
         updated = change_requests.mark_applied(

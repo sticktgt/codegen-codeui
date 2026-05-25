@@ -86,8 +86,9 @@ class ChangeRequestService:
             self._ensure_code_unique(str(patch["code"]), current_cr_id=cr_id)
 
         
+        nullable_clear_fields = {"requested_operation", "insert_scope"}
         for key, value in patch.items():
-            if value is not None or key == "requested_operation":
+            if value is not None or key in nullable_clear_fields:
                 data[key] = value
         
         if "requirement_ids" in patch or "requirement_id" in patch:

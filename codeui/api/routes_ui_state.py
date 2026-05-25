@@ -26,4 +26,4 @@ def select_project(payload: SelectProjectRequest, service: UiStateService = Depe
 
 @router.post("/requirements-file", response_model=UiStateView)
 def set_requirements_file(payload: SetRequirementsFileRequest, service: UiStateService = Depends(get_ui_state_service)) -> UiStateView:
-    return service.update_state(UiStateUpdate(requirements_file_path=payload.path, selected_requirement_ids=[]))
+    return service.update_state(UiStateUpdate(requirements_file_path=payload.path))

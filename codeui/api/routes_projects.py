@@ -5,9 +5,10 @@ from typing import Any
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 
-from codeui.dependencies import get_codecollector_client
+from codeui.dependencies import get_codecollector_client, get_project_lock_service
 from codeui.logger import get_logger
 from codeui.services.codecollector_client import CodeCollectorClient
+from codeui.services.project_lock_service import ProjectOperationLockService
 
 LOGGER = get_logger(__name__)
 
@@ -72,13 +73,22 @@ def onboard_project(payload: ProjectOnboardRequest, client: CodeCollectorClient 
 
 
 @router.post("/delete")
-def delete_project(payload: ProjectDeleteRequest, client: CodeCollectorClient = Depends(get_codecollector_client)) -> dict[str, Any]:
-    return _delete_project(payload.project_id, client)
+def delete_project(
+    payload: ProjectDeleteRequest,
+    client: CodeCollectorClient = Depends(get_codecollector_client),
+    locks: ProjectOperationLockService = Depends(get_project_lock_service),
+) -> dict[str, Any]:
+    return _delete_project(payload.project_id, client, locks)
 
 
 @router.post("/reindex")
-def reindex_project(payload: ProjectReindexRequest, client: CodeCollectorClient = Depends(get_codecollector_client)) -> dict[str, Any]:
-    result = client.reindex_project(payload.project_id)
+def reindex_project(
+    payload: ProjectReindexRequest,
+    client: CodeCollectorClient = Depends(get_codecollector_client),
+    locks: ProjectOperationLockService = Depends(get_project_lock_service),
+) -> dict[str, Any]:
+    with locks.acquire(payload.project_id, "reindex_project"):
+        result = client.reindex_project(payload.project_id)
     LOGGER.info(
         "project reindex response: status=%s error_type=%s project_id=%s full_rebuild=%s indexed_files=%s search_documents_changed=%s",
         result.get("status"),
@@ -94,12 +104,17 @@ def reindex_project(payload: ProjectReindexRequest, client: CodeCollectorClient 
 
 
 @router.delete("/{project_id}")
-def delete_project_by_id(project_id: str, client: CodeCollectorClient = Depends(get_codecollector_client)) -> dict[str, Any]:
-    return _delete_project(project_id, client)
+def delete_project_by_id(
+    project_id: str,
+    client: CodeCollectorClient = Depends(get_codecollector_client),
+    locks: ProjectOperationLockService = Depends(get_project_lock_service),
+) -> dict[str, Any]:
+    return _delete_project(project_id, client, locks)
 
 
-def _delete_project(project_id: str, client: CodeCollectorClient) -> dict[str, Any]:
-    result = client.delete_project(project_id)
+def _delete_project(project_id: str, client: CodeCollectorClient, locks: ProjectOperationLockService) -> dict[str, Any]:
+    with locks.acquire(project_id, "delete_project"):
+        result = client.delete_project(project_id)
     LOGGER.info("project delete response: deleted=%s error_type=%s project_id=%s", result.get("deleted"), result.get("error_type"), result.get("project_id"))
     if result.get("status") == "failed":
         return _controlled_project_response(result)

@@ -1,9 +1,9 @@
 app:
   name: codeui
-  version: "0.2.35"
+  version: "0.2.32"
 
 server:
-  host: "127.0.0.1"
+  host: "0.0.0.0"
   port: 8088
   reload: false
 
@@ -12,7 +12,8 @@ logging:
   format: "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
 
 codecollector:
-  # Путь до соседнего проекта codecollector.
+  # В Docker три проекта лежат соседями, как в локальной разработке:
+  # /home/stickt/llm/codecollector, /home/stickt/llm/codegenerator, /home/stickt/llm/codeui.
   root_dir: "../codecollector"
   python: "python"
   module: "codecollector"
@@ -23,9 +24,9 @@ codecollector:
 
 requirements:
   sources:
-    - id: "demo"
-      type: "json_file"
-      path: "data/requirements.json"
+    - id: "runtime"
+      type: "json_dir"
+      path: "/runtime/requirements"
       enabled: true
 
 change_requests:
@@ -37,10 +38,6 @@ command_trace:
   save_stdout: true
   save_stderr: true
   filename_label_max_chars: 80
-
-project_locks:
-  storage_dir: "data/locks/projects"
-  stale_after_sec: 3600
 
 ui:
   poll_interval_ms: 1500

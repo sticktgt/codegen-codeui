@@ -1,0 +1,54 @@
+services:
+  codeui-app:
+    image: codeui-suite:latest
+    container_name: codeui-app
+    restart: unless-stopped
+    depends_on:
+      pgvector:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+    ports:
+      - "18088:8088"
+    volumes:
+      - ./runtime/codeui/data:/home/stickt/llm/codeui/data
+      - ./runtime/codeui/trace:/home/stickt/llm/codeui/.trace
+      - ./runtime/codecollector/runs:/home/stickt/llm/codecollector/.runs
+      - ./runtime/codecollector/state:/home/stickt/llm/codecollector/.state
+      - ./runtime/codecollector/workspaces:/home/stickt/llm/codecollector/.workspaces
+      - ./runtime/codegenerator/runs:/home/stickt/llm/codegenerator/runs
+      - ./runtime/requirements:/runtime/requirements
+      - ./runtime/projects:/projects
+
+  pgvector:
+    image: pgvector/pgvector:pg17
+    container_name: pgvector-codeui
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: vector_db
+    ports:
+      - "15432:5432"
+    volumes:
+      - codeui_pgvector_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d vector_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    restart: unless-stopped
+    environment:
+      OLLAMA_HOST: 0.0.0.0:11434
+    ports:
+      - "127.0.0.1:11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+
+volumes:
+  codeui_pgvector_data:
+  ollama_data:

@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field, field_validator
 
 class AppSettings(BaseModel):
     name: str = "codeui"
-    version: str = "0.2.32"
+    version: str = "0.2.35"
 
 
 class ServerSettings(BaseModel):
@@ -37,6 +37,20 @@ class CommandTraceSettings(BaseModel):
     def validate_filename_label_max_chars(cls, value: int) -> int:
         if value <= 0:
             raise ValueError("filename_label_max_chars must be positive")
+        return value
+
+
+
+
+class ProjectLocksSettings(BaseModel):
+    storage_dir: Path = Path("data/locks/projects")
+    stale_after_sec: int = 3600
+
+    @field_validator("stale_after_sec")
+    @classmethod
+    def validate_stale_after_sec(cls, value: int) -> int:
+        if value < 0:
+            raise ValueError("stale_after_sec must be non-negative")
         return value
 
 
@@ -87,6 +101,7 @@ class Settings(BaseModel):
     requirements: RequirementsSettings = Field(default_factory=RequirementsSettings)
     change_requests: ChangeRequestsSettings = Field(default_factory=ChangeRequestsSettings)
     command_trace: CommandTraceSettings = Field(default_factory=CommandTraceSettings)
+    project_locks: ProjectLocksSettings = Field(default_factory=ProjectLocksSettings)
     ui: UiSettings = Field(default_factory=UiSettings)
 
     config_path: Path
@@ -124,6 +139,10 @@ class Settings(BaseModel):
     @property
     def command_trace_root(self) -> Path:
         return self.resolve_path(self.command_trace.storage_dir)
+
+    @property
+    def project_locks_root(self) -> Path:
+        return self.resolve_path(self.project_locks.storage_dir)
 
 
 def _default_config_path() -> Path:

@@ -31,3 +31,28 @@ def test_mark_applied_can_use_non_last_run_id(tmp_path):
     assert updated.applied_run_id == "pipeline-old"
     assert updated.last_run_id == "pipeline-new"
     assert updated.raw["applied_workspace_id"] == "workspace-old"
+
+
+def test_update_can_clear_insert_scope(tmp_path):
+    from codeui.schemas.change_requests import ChangeRequestUpdate
+
+    settings = Settings(codecollector=CodeCollectorSettings(root_dir=tmp_path / "codecollector"), config_path=tmp_path / "config.yaml", base_dir=tmp_path)
+    service = ChangeRequestService(settings)
+    cr = service.create_change_request(
+        ChangeRequestCreate(
+            project_id="proj-1",
+            requirement_ids=[],
+            title="Test",
+            description="Test description",
+            requested_operation="insert_after_symbol",
+            insert_scope="class_body",
+        )
+    )
+
+    updated = service.update_change_request(
+        cr.cr_id,
+        ChangeRequestUpdate(requested_operation="replace_symbol", insert_scope=None),
+    )
+
+    assert updated.requested_operation == "replace_symbol"
+    assert updated.insert_scope is None
