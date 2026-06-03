@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field, field_validator
 
 class AppSettings(BaseModel):
     name: str = "codeui"
-    version: str = "0.2.35"
+    version: str = "0.2.37"
 
 
 class ServerSettings(BaseModel):

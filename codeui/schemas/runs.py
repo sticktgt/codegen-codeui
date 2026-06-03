@@ -77,6 +77,7 @@ class RunSummaryView(BaseModel):
     generated_test_files: list[str] = Field(default_factory=list)
     generated_test_merge_recommended: bool | None = None
     generated_test_verification_failed: bool | None = None
+    generated_test_generation_failed: bool | None = None
     generated_test_failed_files: list[str] = Field(default_factory=list)
     generated_test_excluded_files: list[str] = Field(default_factory=list)
     production_failed: bool | None = None

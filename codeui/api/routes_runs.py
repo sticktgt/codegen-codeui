@@ -64,7 +64,8 @@ def apply_run(
     locks: ProjectOperationLockService = Depends(get_project_lock_service),
 ) -> dict:
     summary = service.summary(run_id)
-    if summary.merge_ready is not True:
+    manual_review_statuses = {"generated_test_generation_failed"}
+    if summary.merge_ready is not True and str(summary.status or "").lower() not in manual_review_statuses:
         raise ApiError(
             "RUN_NOT_READY_FOR_APPLY",
             "Выбранный запуск не готов к применению. Проверьте план применения и проверки запуска.",

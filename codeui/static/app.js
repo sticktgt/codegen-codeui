@@ -90,6 +90,7 @@ function statusBadge(value, kind = '') {
   const text = String(value || '—');
   const low = text.toLowerCase();
   if (low === 'generated_test_verification_failed') return badge('требуется проверка', 'warn');
+  if (low === 'generated_test_generation_failed') return badge('требуется проверка', 'warn');
   if (low.includes('верифицировано') && !low.includes('не ')) return badge(text, 'ok');
   if (low.includes('ok') || low.includes('ready') || low.includes('passed') || low === 'applied') return badge(text, 'ok');
   if (low.includes('fail') || low.includes('error') || low.includes('ошибка')) return badge(text, 'err');
@@ -108,14 +109,15 @@ function canApplyCr(cr) {
   const summary = generateResult?.result_summary || {};
   const mergePlan = generateResult?.pipeline_result?.merge_plan || generateResult?.merge_plan || {};
   const mergeReady = summary.merge_ready === true || mergePlan.ready_for_manual_merge_review === true;
-  return mergeReady || status === 'ready_for_merge_review';
+  const resultStatus = String(summary.status || generateResult?.execution_summary?.status || '').toLowerCase();
+  return mergeReady || status === 'ready_for_merge_review' || status === 'generated_test_generation_failed' || resultStatus === 'generated_test_generation_failed';
 }
 function canApplyRun(summary) {
   if (!summary?.run_id || !summary?.workspace_id) return false;
   const linkedCr = findCrForRun(summary.run_id);
   if (linkedCr && isFinalCr(linkedCr)) return false;
   const status = String(summary.status || '').toLowerCase();
-  return summary.merge_ready === true || status === 'ready_for_merge_review';
+  return summary.merge_ready === true || status === 'ready_for_merge_review' || status === 'generated_test_generation_failed';
 }
 
 function linesFromTextarea(value) {
@@ -1699,13 +1701,18 @@ function renderRunContext(runId) {
 }
 
 function renderRunSummary(summary) {
+  const generatedTestGenerationFailed = summary.status === 'generated_test_generation_failed' || summary.generated_test_generation_failed === true;
   const partialGeneratedTest = summary.status === 'generated_test_verification_failed' || summary.generated_test_failed === true || summary.generated_test_verification_failed === true;
-  const productionState = partialGeneratedTest && summary.production_failed === false ? statusBadge('готов к review', 'ok') : (summary.verification_passed ? statusBadge('без ошибок', 'ok') : statusBadge('требует проверки', 'warn'));
-  const generatedTestState = summary.generated_test_failed || summary.generated_test_verification_failed
-    ? statusBadge('не прошел проверку', 'warn')
-    : summary.has_generated_test ? statusBadge('сгенерирован', 'ok') : statusBadge('нет');
+  const manualGeneratedTestIssue = partialGeneratedTest || generatedTestGenerationFailed;
+  const productionState = manualGeneratedTestIssue && summary.production_failed === false ? statusBadge('готов к review', 'ok') : (summary.verification_passed ? statusBadge('без ошибок', 'ok') : statusBadge('требует проверки', 'warn'));
+  const generatedTestState = generatedTestGenerationFailed
+    ? statusBadge('ошибка генерации', 'warn')
+    : summary.generated_test_failed || summary.generated_test_verification_failed
+      ? statusBadge('не прошел проверку', 'warn')
+      : summary.has_generated_test ? statusBadge('сгенерирован', 'ok') : statusBadge('нет');
   return `<div class="compact-summary">
-    ${partialGeneratedTest ? `<div class="message warning-message"><b>Результат требует ручной проверки.</b> Основной код можно рассматривать для применения, но сгенерированный тест не прошел проверку и будет исключен из применения.</div>` : ''}
+    ${generatedTestGenerationFailed ? `<div class="message warning-message"><b>Результат требует ручной проверки.</b> Production artifact применен в staging, но generated test не был создан из-за ошибки генерации и не запускался. Код можно рассматривать вручную; generated test исключен из apply/merge.</div>` : ''}
+    ${!generatedTestGenerationFailed && partialGeneratedTest ? `<div class="message warning-message"><b>Результат требует ручной проверки.</b> Основной код можно рассматривать для применения, но сгенерированный тест не прошел проверку и будет исключен из применения.</div>` : ''}
     <div class="kv-grid compact-kv">
       <div class="key">Статус</div><div>${statusBadge(summary.status)}</div>
       <div class="key">Операция</div><div>${escapeHtml(operationLabel(summary.final_operation || summary.requested_operation) || '—')}</div>
@@ -1728,19 +1735,21 @@ function renderRunSummary(summary) {
 }
 
 function renderRunResult(summary) {
+  const generatedTestGenerationFailed = summary.status === 'generated_test_generation_failed' || summary.generated_test_generation_failed === true;
   const partialGeneratedTest = summary.status === 'generated_test_verification_failed' || summary.generated_test_failed === true || summary.generated_test_verification_failed === true;
   const lines = Array.isArray(summary.merge_plan_summary_lines) ? summary.merge_plan_summary_lines : [];
   return `<div class="compact-section">
     ${summary.primary_issue ? renderPrimaryIssue(summary.primary_issue) : '<div class="message compact-message">Основная проблема не выделена. Подробности доступны во вкладках “Проверки” и “Применение”.</div>'}
-    ${partialGeneratedTest ? `<div class="message warning-message"><b>Generated test не прошел verification.</b> Production artifact применен в staging, а generated test исключается из apply/merge. Merge остается dry-run/manual-review, а не автоматическим финальным успехом.</div>` : ''}
+    ${generatedTestGenerationFailed ? `<div class="message warning-message"><b>Generated test не был создан.</b> Production artifact применен в staging, но генерация generated test завершилась ошибкой. Generated test не запускался и исключается из apply/merge; итог требует ручного review production-кода.</div>` : ''}
+    ${!generatedTestGenerationFailed && partialGeneratedTest ? `<div class="message warning-message"><b>Generated test не прошел verification.</b> Production artifact применен в staging, а generated test исключается из apply/merge. Merge остается dry-run/manual-review, а не автоматическим финальным успехом.</div>` : ''}
     <div class="kv-grid compact-kv">
       <div class="key">Статус</div><div>${statusBadge(summary.status)}</div>
       <div class="key">Проверки</div><div>${summary.verification_passed ? statusBadge('пройдены', 'ok') : statusBadge('требуют внимания', 'warn')}</div>
       <div class="key">Применение</div><div>${summary.merge_ready ? statusBadge('готово к review', 'ok') : statusBadge('не готово', 'warn')}</div>
       <div class="key">Review verdict</div><div>${summary.generated_test_failure_review_verdict ? `<span class="mono-text">${escapeHtml(summary.generated_test_failure_review_verdict)}</span> ${badge('advisory', 'info')}` : '—'}</div>
       <div class="key">Repair</div><div>${summary.repair_used ? statusBadge('использовался', 'warn') : statusBadge('нет')}</div>
-      <div class="key">Generated test</div><div>${summary.generated_test_failed || summary.generated_test_verification_failed ? statusBadge('ошибка', 'warn') : summary.has_generated_test ? statusBadge('есть', 'ok') : statusBadge('нет')}</div>
-      <div class="key">Generated test verification</div><div>${summary.generated_test_verification_failed ? statusBadge('failed', 'warn') : '—'}</div>
+      <div class="key">Generated test</div><div>${summary.generated_test_generation_failed ? statusBadge('ошибка генерации', 'warn') : summary.generated_test_failed || summary.generated_test_verification_failed ? statusBadge('ошибка', 'warn') : summary.has_generated_test ? statusBadge('есть', 'ok') : statusBadge('нет')}</div>
+      <div class="key">Generated test verification</div><div>${summary.generated_test_generation_failed ? statusBadge('не запускался', 'warn') : summary.generated_test_verification_failed ? statusBadge('failed', 'warn') : '—'}</div>
       <div class="key">Generated test merge</div><div>${summary.generated_test_merge_recommended === false ? statusBadge('excluded', 'warn') : summary.generated_test_merge_recommended === true ? statusBadge('recommended', 'ok') : '—'}</div>
     </div>
     ${lines.length ? `<div class="compact-list-block full-width"><div class="compact-list-title">Краткий итог</div><ul>${lines.map(line => `<li>${escapeHtml(line)}</li>`).join('')}</ul></div>` : ''}
@@ -1777,6 +1786,7 @@ function renderGeneratedTestFailureReview(payload) {
 function renderRecommendedTestsWarning(summary) {
   const hasRecommended = (summary.recommended_tests || []).length || (summary.recommended_test_commands || []).length;
   const generatedExcluded = summary.generated_test_merge_recommended === false
+    || summary.generated_test_generation_failed === true
     || summary.generated_test_verification_failed === true
     || (summary.generated_test_excluded_files || []).length
     || (summary.excluded_files || []).some(path => String(path).includes('test_generated_'));
@@ -1932,7 +1942,10 @@ function renderGeneratedTestApplySummary(summary) {
       <div class="key">Рекомендован к merge</div><div>${gta.merge_recommended === false ? statusBadge('нет', 'warn') : gta.merge_recommended === true ? statusBadge('да', 'ok') : '—'}</div>
       <div class="key">Verification failed</div><div>${gta.verification_failed ? statusBadge('да', 'warn') : statusBadge('нет')}</div>
       <div class="key">Причина</div><div>${escapeHtml(gta.reason || '—')}</div>
+      <div class="key">Тип ошибки</div><div>${escapeHtml(gta.error_type || '—')}</div>
       <div class="key">Сообщение</div><div>${escapeHtml(gta.message || '—')}</div>
+      <div class="key">Request ID</div><div class="mono-text">${escapeHtml(gta.request_id || '—')}</div>
+      <div class="key">Trace</div><div class="path-text">${escapeHtml(gta.trace_path || '—')}</div>
     </div>
     ${renderCompactList('Applied tests', gta.applied_tests || [])}
     ${renderCompactList('Candidate tests', gta.candidate_test_files || [])}
@@ -1970,9 +1983,30 @@ function formatNumber(value) {
   return Math.round(number * 100) / 100;
 }
 function renderSteps(steps) {
-  return `<table class="table"><thead><tr><th>Шаг</th><th>Статус</th><th>Время</th><th>Токены</th><th>Описание</th></tr></thead><tbody>${(steps || []).map(step => `
-    <tr class="${step.step_name === 'generated_test_failure_review' ? 'advisory-step-row' : ''}"><td>${renderStepName(step)}</td><td>${statusBadge(step.status)}</td><td>${escapeHtml(step.duration_ms ?? '—')} мс</td><td>${escapeHtml(step.usage?.total_tokens ?? '—')}</td><td>${escapeHtml(step.summary || '')}</td></tr>
+  return `<table class="table steps-table"><thead><tr><th>Шаг</th><th>Статус</th><th>Время</th><th>Токены</th><th>Описание</th></tr></thead><tbody>${(steps || []).map(step => `
+    <tr class="${step.step_name === 'generated_test_failure_review' ? 'advisory-step-row' : ''} ${hasStepError(step) ? 'step-error-row' : ''}"><td>${renderStepName(step)}</td><td>${statusBadge(step.status)}</td><td>${escapeHtml(step.duration_ms ?? '—')} мс</td><td>${escapeHtml(step.usage?.total_tokens ?? '—')}</td><td>${renderStepDescription(step)}</td></tr>
   `).join('')}</tbody></table>`;
+}
+
+function hasStepError(step) {
+  return Boolean(step?.error_type || step?.error_message || step?.exception_class);
+}
+
+function renderStepDescription(step) {
+  const summary = step?.summary ? `<div class="step-summary">${escapeHtml(step.summary)}</div>` : '';
+  if (!hasStepError(step)) return summary;
+  const errorTitleParts = [
+    step?.error_type ? `Тип: ${step.error_type}` : '',
+    step?.exception_class ? `Исключение: ${step.exception_class}` : '',
+  ].filter(Boolean);
+  const message = String(step?.error_message || '');
+  const shortMessage = message.length > 220 ? `${message.slice(0, 220)}…` : message;
+  const errorTitle = errorTitleParts.length ? errorTitleParts.join('; ') : 'Ошибка шага';
+  const compactMessage = shortMessage ? `<div class="step-error-compact">${escapeHtml(shortMessage)}</div>` : '';
+  const details = message.length > 220
+    ? `<details class="step-error-details"><summary>Показать полное сообщение</summary><pre>${escapeHtml(message)}</pre></details>`
+    : '';
+  return `${summary}<div class="step-error-box"><div class="step-error-title">${escapeHtml(errorTitle)}</div>${compactMessage}${details}</div>`;
 }
 
 function renderStepName(step) {
@@ -1984,9 +2018,11 @@ function renderStepName(step) {
 }
 function renderChecks(checks, summary = null) {
   const list = Array.isArray(checks) ? checks : [];
-  const note = summary && (summary.status === 'generated_test_verification_failed' || summary.generated_test_failed === true)
-    ? '<div class="message warning-message">Ошибка относится к сгенерированному тесту. Основной production-код не классифицирован как ошибочный.</div>'
-    : '';
+  const note = summary && (summary.status === 'generated_test_generation_failed' || summary.generated_test_generation_failed === true)
+    ? '<div class="message warning-message">Generated test не был создан из-за ошибки генерации и не запускался. Основной production-код требует ручной проверки.</div>'
+    : summary && (summary.status === 'generated_test_verification_failed' || summary.generated_test_failed === true)
+      ? '<div class="message warning-message">Ошибка относится к сгенерированному тесту. Основной production-код не классифицирован как ошибочный.</div>'
+      : '';
   const production = [];
   const generated = [];
   for (const check of list) {

@@ -647,6 +647,52 @@ details summary {
 .advisory-step-row {
   background: #f8fbff;
 }
+
+.step-error-row {
+  background: #fffbfa;
+}
+.steps-table td:last-child {
+  min-width: 280px;
+}
+.step-summary + .step-error-box {
+  margin-top: 6px;
+}
+.step-error-box {
+  border-left: 3px solid #d92d20;
+  background: #fff7f7;
+  padding: 7px 9px;
+  border-radius: 6px;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.step-error-title {
+  font-weight: 700;
+  color: var(--danger);
+  margin-bottom: 4px;
+}
+.step-error-compact {
+  color: var(--text);
+  white-space: normal;
+}
+.step-error-details {
+  margin-top: 5px;
+}
+.step-error-details > summary {
+  cursor: pointer;
+  color: var(--danger);
+  font-weight: 600;
+}
+.step-error-details pre {
+  margin: 6px 0 0;
+  max-height: 260px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: #fff;
+  border: 1px solid #fecdca;
+  border-radius: 6px;
+  padding: 8px;
+}
 .advisory-warning-list {
   margin-top: 6px;
 }

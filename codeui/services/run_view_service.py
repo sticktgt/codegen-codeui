@@ -138,12 +138,14 @@ class RunViewService:
         )
         generated_test_review = self._generated_test_failure_review(run_id, payload)
         generated_test_review_payload = self._dict(generated_test_review.get("review") if generated_test_review else None)
+        status = execution.get("status") or result_summary.get("status") or verification.get("verdict") or self._status_from_steps(payload)
+        generated_test_generation_failed = self._is_generated_test_generation_failed(status, generated_test_apply, verification)
 
         return RunSummaryView(
             run_id=str(payload.get("run_id") or run_id),
             run_label=payload.get("run_label"),
             run_dir=payload.get("run_dir"),
-            status=execution.get("status") or result_summary.get("status") or verification.get("verdict") or self._status_from_steps(payload),
+            status=status,
             selected_target=execution.get("selected_target") or result_summary.get("selected_target") or payload.get("selected_target"),
             target_role=target_role,
             parent_qualname=parent_qualname,
@@ -162,7 +164,8 @@ class RunViewService:
             has_generated_test=bool(result_summary.get("has_generated_test") or execution.get("has_generated_test") or generated_test_apply.get("count") or generated_test_apply.get("applied_tests") or generated_test_files),
             generated_test_files=generated_test_files,
             generated_test_merge_recommended=generated_test_apply.get("merge_recommended") if "merge_recommended" in generated_test_apply else None,
-            generated_test_verification_failed=generated_test_apply.get("verification_failed") if "verification_failed" in generated_test_apply else None,
+            generated_test_verification_failed=False if generated_test_generation_failed else generated_test_apply.get("verification_failed") if "verification_failed" in generated_test_apply else None,
+            generated_test_generation_failed=generated_test_generation_failed,
             generated_test_failed_files=self._unique_list(self._list(verification_summary.get("generated_test_failed_files"))),
             generated_test_excluded_files=generated_test_excluded_files,
             production_failed=verification_summary.get("production_failed") if "production_failed" in verification_summary else None,
@@ -299,8 +302,16 @@ class RunViewService:
         }
 
 
-    @staticmethod
+    def _is_generated_test_generation_failed(self, status: Any, generated_test_apply: dict[str, Any], verification: dict[str, Any]) -> bool:
+        values = {
+            str(status or "").lower(),
+            str(generated_test_apply.get("reason") or "").lower(),
+            str(verification.get("verdict") or "").lower(),
+        }
+        return "generated_test_generation_failed" in values
+
     def _workspace_id(
+        self,
         payload: dict[str, Any],
         execution: dict[str, Any],
         result_summary: dict[str, Any],

@@ -208,3 +208,64 @@ def test_summary_extracts_workspace_id_from_top_level_or_workspace_path(tmp_path
 
     assert summary.workspace_id == "src-20260514T124459.362849Z-a752a8"
     assert summary.merge_ready is True
+
+
+def test_summary_treats_generated_test_generation_failed_as_manual_review_without_test_verification(tmp_path: Path) -> None:
+    service = make_service(
+        tmp_path,
+        {
+            "execution_summary": {"status": "generated_test_generation_failed", "verification_passed": False},
+            "verification_report": {"verdict": "generated_test_generation_failed", "passed": False},
+            "generated_test_apply": {
+                "applied_tests": [],
+                "count": 0,
+                "skipped": True,
+                "reason": "generated_test_generation_failed",
+                "error_type": "RuntimeError",
+                "message": "Ollama request failed",
+                "request_id": "generate-test-generate_filename",
+                "trace_path": "runs/20260602_135151_generate-test-generate_filename.json",
+                "verification_failed": True,
+                "merge_recommended": False,
+                "excluded_files": [],
+            },
+        },
+    )
+
+    summary = service.summary("pipeline-20260514T120000.000000Z-test")
+
+    assert summary.status == "generated_test_generation_failed"
+    assert summary.generated_test_generation_failed is True
+    assert summary.generated_test_verification_failed is False
+    assert summary.has_generated_test is False
+    assert summary.generated_test_apply is not None
+    assert summary.generated_test_apply["error_type"] == "RuntimeError"
+
+
+def test_steps_preserve_error_details_from_pipeline_steps(tmp_path: Path) -> None:
+    service = make_service(
+        tmp_path,
+        {
+            "steps": [
+                {
+                    "step_name": "external_generate",
+                    "status": "error",
+                    "duration_ms": 180000,
+                    "summary": "Вызвать внешний codegenerator и получить code artifact",
+                    "error_type": "RuntimeError",
+                    "exception_class": "RuntimeError",
+                    "error_message": "Ollama request failed: HTTPSConnectionPool(host='ollama.com', port=443): Read timed out.",
+                },
+                {"step_name": "merge_dry_run", "status": "skipped"},
+            ]
+        },
+    )
+
+    steps = service.steps("pipeline-20260514T120000.000000Z-test")
+
+    assert steps[0].step_name == "external_generate"
+    assert steps[0].status == "error"
+    assert steps[0].error_type == "RuntimeError"
+    assert steps[0].exception_class == "RuntimeError"
+    assert "Ollama request failed" in str(steps[0].error_message)
+    assert steps[1].error_message is None

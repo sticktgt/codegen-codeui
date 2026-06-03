@@ -258,7 +258,8 @@ def apply_last_run(
     if not cr.last_workspace_id or not cr.last_run_id:
         raise ApiError("WORKSPACE_NOT_SELECTED", "У запроса нет последнего результата для применения.", status_code=409)
     summary = run_service.summary(cr.last_run_id)
-    if summary.merge_ready is not True:
+    manual_review_statuses = {"generated_test_generation_failed"}
+    if summary.merge_ready is not True and str(summary.status or "").lower() not in manual_review_statuses:
         raise ApiError(
             "RUN_NOT_READY_FOR_APPLY",
             "Последний результат не готов к применению. Проверьте план применения и проверки запуска.",
