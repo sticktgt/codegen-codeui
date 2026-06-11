@@ -142,3 +142,30 @@ def test_reindex_project_uses_projects_reindex_full_command(tmp_path: Path) -> N
         "proj-1",
         "--full",
     ]
+
+
+def test_workspace_apply_passes_traceability_ids(tmp_path: Path) -> None:
+    runner = RecordingRunner()
+    client = CodeCollectorClient(make_settings(tmp_path), runner=runner)  # type: ignore[arg-type]
+
+    client.workspace_apply(
+        "workspace-1",
+        change_request_id="CR-001",
+        requirement_ids=["REQ-001", "REQ-002"],
+    )
+
+    assert runner.commands[-1] == [
+        "python",
+        "-m",
+        "codecollector",
+        "workspaces",
+        "apply",
+        "--workspace-id",
+        "workspace-1",
+        "--change-request-id",
+        "CR-001",
+        "--requirement-id",
+        "REQ-001",
+        "--requirement-id",
+        "REQ-002",
+    ]

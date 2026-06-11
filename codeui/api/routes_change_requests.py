@@ -15,6 +15,7 @@ from codeui.schemas.change_requests import (
 )
 from codeui.schemas.runs import RunListItem, RunListResponse
 from codeui.services.change_request_service import ChangeRequestService
+from codeui.services.change_request_traceability import change_request_traceability_id
 from codeui.services.codecollector_client import CodeCollectorClient
 from codeui.services.run_view_service import RunViewService
 from codeui.services.project_lock_service import ProjectOperationLockService
@@ -273,6 +274,10 @@ def apply_last_run(
             },
         )
     with locks.acquire(cr.project_id, "apply_workspace", details={"cr_id": cr_id, "run_id": cr.last_run_id, "workspace_id": cr.last_workspace_id}):
-        result = client.workspace_apply(cr.last_workspace_id)
+        result = client.workspace_apply(
+            cr.last_workspace_id,
+            change_request_id=change_request_traceability_id(cr),
+            requirement_ids=cr.requirement_ids,
+        )
     updated = service.mark_applied(cr_id, result)
     return {"change_request": updated.model_dump(mode="json"), "apply_result": result}

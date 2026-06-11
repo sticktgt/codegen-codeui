@@ -136,8 +136,20 @@ class CodeCollectorClient:
             command.append("--disable-vector-search")
         return self._run_json(command)
 
-    def workspace_apply(self, workspace_id: str) -> Any:
-        return self._run_json(["workspaces", "apply", "--workspace-id", workspace_id])
+    def workspace_apply(
+        self,
+        workspace_id: str,
+        *,
+        change_request_id: str | None = None,
+        requirement_ids: list[str] | None = None,
+    ) -> Any:
+        command = ["workspaces", "apply", "--workspace-id", workspace_id]
+        if change_request_id:
+            command.extend(["--change-request-id", change_request_id])
+        for requirement_id in requirement_ids or []:
+            if requirement_id:
+                command.extend(["--requirement-id", requirement_id])
+        return self._run_json(command)
 
     def _run_json(self, args: list[str], *, allow_nonzero_json: bool = False) -> Any:
         command = [self._settings.codecollector.python, "-m", self._settings.codecollector.module, *args]

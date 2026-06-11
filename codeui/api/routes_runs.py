@@ -6,6 +6,7 @@ from codeui.dependencies import get_change_request_service, get_codecollector_cl
 from codeui.errors import ApiError
 from codeui.schemas.runs import ArtifactView, CheckView, DiffView, RunListResponse, RunSummaryView, StepView
 from codeui.services.change_request_service import ChangeRequestService
+from codeui.services.change_request_traceability import change_request_traceability_id
 from codeui.services.codecollector_client import CodeCollectorClient
 from codeui.services.run_view_service import RunViewService
 from codeui.services.project_lock_service import ProjectOperationLockService
@@ -103,7 +104,11 @@ def apply_run(
 
     lock_project_id = linked_cr.project_id if linked_cr else f"workspace-{summary.workspace_id}"
     with locks.acquire(lock_project_id, "apply_workspace", details={"run_id": run_id, "workspace_id": summary.workspace_id}):
-        result = client.workspace_apply(summary.workspace_id)
+        result = client.workspace_apply(
+            summary.workspace_id,
+            change_request_id=change_request_traceability_id(linked_cr) if linked_cr else None,
+            requirement_ids=linked_cr.requirement_ids if linked_cr else [],
+        )
     response: dict = {"run_id": run_id, "workspace_id": summary.workspace_id, "apply_result": result}
     if linked_cr:
         updated = change_requests.mark_applied(
