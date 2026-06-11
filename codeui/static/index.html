@@ -13,6 +13,8 @@
       <button class="nav-item active" data-view="requirements-view">1. Требования</button>
       <button class="nav-item" data-view="requests-view">2. Запросы</button>
       <button class="nav-item" data-view="runs-view">3. Запуски</button>
+      <button class="nav-item" data-view="project-schema-graph-view">Карта проекта</button>
+      <button class="nav-item" data-view="project-schema-view">Схема проекта</button>
     </nav>
     <div class="status-pill" id="api-status">API</div>
   </header>
@@ -93,8 +95,35 @@
         </section>
       </div>
     </section>
+
+    <section id="project-schema-view" class="view">
+      <div class="panel project-schema-panel">
+        <div class="panel-header compact-header">
+          <h2>Схема проекта</h2>
+          <span class="counter" id="project-schema-count">0 связей</span>
+          <button class="btn small" id="refresh-project-schema-btn">Обновить</button>
+        </div>
+        <div id="project-schema-root" class="project-schema-root">
+          <div class="empty-state">Выберите проект и файл требований.</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="project-schema-graph-view" class="view">
+      <div class="panel project-schema-panel">
+        <div class="panel-header compact-header">
+          <h2>Карта проекта</h2>
+          <span class="counter" id="project-schema-graph-count">0 связей</span>
+          <button class="btn small" id="refresh-project-schema-graph-btn">Обновить</button>
+        </div>
+        <div id="project-schema-graph-root" class="project-schema-root">
+          <div class="empty-state">Выберите проект и файл требований.</div>
+        </div>
+      </div>
+    </section>
   </main>
 
+  <script src="/static/project_schema_view.js"></script>
   <script src="/static/app.js"></script>
 </body>
 </html>

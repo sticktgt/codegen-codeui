@@ -10,6 +10,7 @@ from codeui.services.requirements_service import RequirementsService
 from codeui.services.run_artifact_service import RunArtifactService
 from codeui.services.run_view_service import RunViewService
 from codeui.services.project_lock_service import ProjectOperationLockService
+from codeui.services.project_schema_service import ProjectSchemaService
 from codeui.services.ui_state_service import UiStateService
 
 
@@ -48,3 +49,7 @@ def get_ui_state_service() -> UiStateService:
 
 def get_project_lock_service() -> ProjectOperationLockService:
     return ProjectOperationLockService(get_settings())
+
+
+def get_project_schema_service() -> ProjectSchemaService:
+    return ProjectSchemaService()

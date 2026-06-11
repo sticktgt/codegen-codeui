@@ -12,6 +12,8 @@ const state = {
   runsAllLoaded: false,
   defaultRunsLimit: 50,
   projectActionResult: null,
+  projectSchema: null,
+  projectSchemaError: null,
 };
 
 const FINAL_CR_STATUSES = new Set(['applied']);
@@ -381,11 +383,17 @@ function bindNavigation() {
   document.querySelectorAll('.nav-item').forEach(button => {
     button.addEventListener('click', () => setActiveView(button.dataset.view));
   });
+  window.addEventListener('project-schema:open-requirement', event => {
+    const requirementId = event.detail?.requirementId;
+    if (requirementId) openRequirementFromSchemaMap(requirementId);
+  });
 }
 
 function setActiveView(viewId) {
   document.querySelectorAll('.nav-item').forEach(button => button.classList.toggle('active', button.dataset.view === viewId));
   document.querySelectorAll('.view').forEach(view => view.classList.toggle('active', view.id === viewId));
+  if (viewId === 'project-schema-view') loadAndRenderProjectSchema();
+  if (viewId === 'project-schema-graph-view') loadAndRenderProjectSchemaGraph();
 }
 
 function bindToolbar() {
@@ -403,6 +411,24 @@ function bindToolbar() {
       renderRuns();
     });
   });
+  const schemaButton = $('refresh-project-schema-btn');
+  if (schemaButton) {
+    schemaButton.addEventListener('click', async event => {
+      await withBusyButton(event.currentTarget, 'Обновление...', async () => {
+        await loadProjectSchema();
+        renderProjectSchema();
+      });
+    });
+  }
+  const schemaGraphButton = $('refresh-project-schema-graph-btn');
+  if (schemaGraphButton) {
+    schemaGraphButton.addEventListener('click', async event => {
+      await withBusyButton(event.currentTarget, 'Обновление...', async () => {
+        await loadProjectSchema();
+        renderProjectSchemaGraph();
+      });
+    });
+  }
 }
 
 async function loadAll() {
@@ -448,6 +474,79 @@ async function loadRuns({ all = false } = {}) {
   state.runsAllLoaded = all;
 }
 
+async function loadProjectSchema() {
+  try {
+    state.projectSchemaError = null;
+    state.projectSchema = await api.get('/api/project-schema');
+  } catch (error) {
+    state.projectSchema = null;
+    state.projectSchemaError = error.message;
+  }
+}
+
+async function loadAndRenderProjectSchema() {
+  const root = $('project-schema-root');
+  if (!root) return;
+  if (!state.projectSchema && !state.projectSchemaError) {
+    root.innerHTML = '<div class="empty-state">Загрузка схемы проекта...</div>';
+    await loadProjectSchema();
+  }
+  renderProjectSchema();
+}
+
+function resetProjectSchema() {
+  state.projectSchema = null;
+  state.projectSchemaError = null;
+}
+
+async function loadAndRenderProjectSchemaGraph() {
+  const root = $('project-schema-graph-root');
+  if (!root) return;
+  if (!state.projectSchema && !state.projectSchemaError) {
+    root.innerHTML = '<div class="empty-state">Загрузка карты связей...</div>';
+    await loadProjectSchema();
+  }
+  renderProjectSchemaGraph();
+}
+
+function renderProjectSchema() {
+  const root = $('project-schema-root');
+  if (!root) return;
+  if (state.projectSchemaError) {
+    root.innerHTML = `<div class="empty-state">Схема проекта недоступна: ${escapeHtml(state.projectSchemaError)}</div>`;
+    const counter = $('project-schema-count');
+    if (counter) counter.textContent = '0 связей';
+    return;
+  }
+  if (window.ProjectSchemaView) {
+    window.ProjectSchemaView.render(root, state.projectSchema);
+  }
+  const counter = $('project-schema-count');
+  if (counter) {
+    const links = state.projectSchema?.summary?.links_count ?? 0;
+    counter.textContent = `${links} связей`;
+  }
+}
+
+function renderProjectSchemaGraph() {
+  const root = $('project-schema-graph-root');
+  if (!root) return;
+  if (state.projectSchemaError) {
+    root.innerHTML = `<div class="empty-state">Карта связей недоступна: ${escapeHtml(state.projectSchemaError)}</div>`;
+    const counter = $('project-schema-graph-count');
+    if (counter) counter.textContent = '0 связей';
+    return;
+  }
+  if (window.ProjectSchemaView) {
+    window.ProjectSchemaView.renderGraph(root, state.projectSchema);
+  }
+  const counter = $('project-schema-graph-count');
+  if (counter) {
+    const links = state.projectSchema?.summary?.links_count ?? 0;
+    counter.textContent = `${links} связей`;
+  }
+}
+
 function renderAll() {
   resetProjectScopedSelection();
   renderProjectPanel();
@@ -455,6 +554,8 @@ function renderAll() {
   renderCrList();
   renderSelectedCr();
   renderRuns();
+  renderProjectSchema();
+  renderProjectSchemaGraph();
 }
 
 function setApiStatus(text, error = false) {
@@ -689,6 +790,7 @@ async function onboardProject(event) {
     if (response.ok && result.project_id) {
       state.uiState = await api.post('/api/ui-state/select-project', { project_id: result.project_id });
       clearProjectScopedLocalSelection();
+      resetProjectSchema();
       $('register-project-panel').classList.add('hidden');
       form.reset();
       form.querySelector('[name="full"]').checked = true;
@@ -702,10 +804,12 @@ async function selectProjectFromDropdown() {
   if (!projectId) {
     state.uiState = await api.put('/api/ui-state', { selected_project_id: null });
     clearProjectScopedLocalSelection();
+    resetProjectSchema();
     renderAll();
     return;
   }
   state.uiState = await api.post('/api/ui-state/select-project', { project_id: projectId });
+  resetProjectSchema();
   const selectedCr = state.changeRequests.find(item => item.cr_id === state.selectedCrId);
   if (selectedCr && selectedCr.project_id !== projectId) {
     clearProjectScopedLocalSelection();
@@ -721,6 +825,7 @@ async function reindexSelectedProject(event) {
     console.log('project reindex response', response);
     state.projectActionResult = { action: 'reindex', response };
     await loadProjects();
+    resetProjectSchema();
     renderProjectPanel();
   });
 }
@@ -750,6 +855,7 @@ async function setRequirementsPath() {
   try {
     state.uiState = await api.post('/api/ui-state/requirements-file', { path });
     setSelectedRequirementId(null);
+    resetProjectSchema();
     await loadRequirements();
     renderRequirements();
   } catch (error) { alert(error.message); }
@@ -791,6 +897,19 @@ function renderTreeNodes(nodes, level) {
 async function selectRequirement(requirementId) {
   setSelectedRequirementId(requirementId);
   renderRequirements();
+}
+
+function openRequirementFromSchemaMap(requirementId) {
+  setSelectedRequirementId(requirementId);
+  setActiveView('requirements-view');
+  renderRequirements();
+  window.requestAnimationFrame(() => {
+    const items = [...document.querySelectorAll('#requirements-tree [data-requirement-id]')];
+    const target = items.find(item => item.dataset.requirementId === requirementId);
+    if (target) {
+      target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }
+  });
 }
 
 function renderRequirementDetail(item) {

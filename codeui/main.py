@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from codeui.api import routes_change_requests, routes_health, routes_projects, routes_requirements, routes_runs, routes_sessions, routes_settings, routes_ui_state, routes_workspaces
+from codeui.api import routes_change_requests, routes_health, routes_project_schema, routes_projects, routes_requirements, routes_runs, routes_sessions, routes_settings, routes_ui_state, routes_workspaces
 from codeui.config import load_settings
 from codeui.errors import ApiError, api_error_handler, unhandled_error_handler
 from codeui.logger import configure_logging, get_logger
@@ -26,6 +26,7 @@ def create_app() -> FastAPI:
     app.include_router(routes_ui_state.router)
     app.include_router(routes_projects.router)
     app.include_router(routes_requirements.router)
+    app.include_router(routes_project_schema.router)
     app.include_router(routes_change_requests.router)
     app.include_router(routes_sessions.router)
     app.include_router(routes_runs.router)
