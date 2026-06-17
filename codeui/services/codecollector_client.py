@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from codeui.config import Settings
+from codeui.errors import ApiError
 from codeui.logger import get_logger
 from codeui.services.command_runner import CommandRunner
 from codeui.services.json_io import extract_json_from_stdout, write_json_file
@@ -149,7 +150,59 @@ class CodeCollectorClient:
         for requirement_id in requirement_ids or []:
             if requirement_id:
                 command.extend(["--requirement-id", requirement_id])
-        return self._run_json(command)
+        payload = self._run_json(command, allow_nonzero_json=True)
+        self._raise_workspace_apply_error_if_needed(payload)
+        return payload
+
+    def _raise_workspace_apply_error_if_needed(self, payload: Any) -> None:
+        if not isinstance(payload, dict):
+            return
+
+        command_info = payload.get("_codeui_command") if isinstance(payload.get("_codeui_command"), dict) else {}
+        failed_status = str(payload.get("status") or "").lower() in {"failed", "error"}
+        failed_command = command_info.get("returncode") not in (None, 0)
+        if not failed_status and not failed_command:
+            return
+
+        if self._is_workspace_apply_conflict(payload):
+            details = self._workspace_apply_conflict_details(payload)
+            raise ApiError(
+                "WORKSPACE_APPLY_CONFLICT",
+                "Workspace не применён: файл проекта изменился после создания workspace.",
+                status_code=409,
+                details=details,
+            )
+
+        raise ApiError(
+            "CODECOLLECTOR_COMMAND_FAILED",
+            str(payload.get("message") or "codecollector command failed"),
+            status_code=502,
+            details={"payload": payload},
+        )
+
+    def _is_workspace_apply_conflict(self, payload: dict[str, Any]) -> bool:
+        details = payload.get("details") if isinstance(payload.get("details"), dict) else {}
+        if payload.get("error_type") == "WorkspaceApplyConflictError":
+            return True
+        if details.get("guard") == "workspace_base_hash" and details.get("status") == "blocked":
+            return True
+        if payload.get("code") == "WORKSPACE_APPLY_CONFLICT":
+            return True
+        return False
+
+    def _workspace_apply_conflict_details(self, payload: dict[str, Any]) -> dict[str, Any]:
+        details = payload.get("details") if isinstance(payload.get("details"), dict) else {}
+        command_info = payload.get("_codeui_command") if isinstance(payload.get("_codeui_command"), dict) else {}
+        conflicts = details.get("conflicts") if isinstance(details.get("conflicts"), list) else []
+        return {
+            "guard": details.get("guard") or "workspace_base_hash",
+            "status": details.get("status") or "blocked",
+            "reason": details.get("reason") or payload.get("message") or "project_changed_after_workspace_creation",
+            "workspace_id": details.get("workspace_id") or payload.get("workspace_id"),
+            "conflicts": conflicts,
+            "recommended_action": "Создайте новый запуск для этого CR или выполните ручной merge.",
+            "command": command_info,
+        }
 
     def _run_json(self, args: list[str], *, allow_nonzero_json: bool = False) -> Any:
         command = [self._settings.codecollector.python, "-m", self._settings.codecollector.module, *args]

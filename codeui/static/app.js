@@ -59,6 +59,8 @@ async function handleResponse(response) {
 }
 
 function formatApiErrorMessage(payload, rawText, status) {
+  const conflictMessage = formatWorkspaceApplyConflictMessage(payload);
+  if (conflictMessage) return conflictMessage;
   if (payload?.error?.message) return String(payload.error.message);
   if (payload?.message) return String(payload.message);
   if (typeof payload?.detail === 'string') return payload.detail;
@@ -74,6 +76,34 @@ function formatApiErrorMessage(payload, rawText, status) {
   if (typeof payload === 'string' && payload) return payload;
   if (rawText) return rawText;
   return `HTTP ${status}`;
+}
+
+
+function formatWorkspaceApplyConflictMessage(payload) {
+  const error = payload?.error && typeof payload.error === 'object' ? payload.error : null;
+  if (error?.code !== 'WORKSPACE_APPLY_CONFLICT') return null;
+  const details = error.details && typeof error.details === 'object' ? error.details : {};
+  const conflicts = Array.isArray(details.conflicts) ? details.conflicts : [];
+  const lines = [error.message || 'Workspace не применён: файл проекта изменился после создания workspace.'];
+  if (conflicts.length) {
+    lines.push('', 'Файлы с конфликтом:');
+    for (const item of conflicts) {
+      const file = item.file || item.path || item.file_path || 'неизвестный файл';
+      lines.push(`- ${file}`);
+      if (item.expected_sha256 || item.actual_sha256) {
+        lines.push(`  workspace: ${shortHash(item.expected_sha256)}`);
+        lines.push(`  проект:    ${shortHash(item.actual_sha256)}`);
+      }
+    }
+  }
+  lines.push('', details.recommended_action || 'Создайте новый запуск для этого CR или выполните ручной merge.');
+  return lines.join('\n');
+}
+
+function shortHash(value) {
+  const text = String(value || '—');
+  if (text === '—' || text.length <= 16) return text;
+  return `${text.slice(0, 12)}…${text.slice(-6)}`;
 }
 
 function $(id) { return document.getElementById(id); }

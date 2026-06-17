@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from codeui.config import CodeCollectorSettings, Settings
+from codeui.errors import ApiError
 from codeui.services.codecollector_client import CodeCollectorClient
 from codeui.services.command_runner import CommandResult
 
@@ -169,3 +172,65 @@ def test_workspace_apply_passes_traceability_ids(tmp_path: Path) -> None:
         "--requirement-id",
         "REQ-002",
     ]
+
+
+class StaticRunner:
+    def __init__(self, result: CommandResult) -> None:
+        self.result = result
+        self.commands: list[list[str]] = []
+
+    def run(
+        self,
+        command: list[str],
+        *,
+        cwd: Path | None = None,
+        timeout_sec: int | None = None,
+        check_returncode: bool = True,
+    ) -> CommandResult:
+        self.commands.append(command)
+        return self.result
+
+
+def test_workspace_apply_conflict_raises_409_api_error(tmp_path: Path) -> None:
+    stdout = '{"status":"failed","error_type":"WorkspaceApplyConflictError","message":"blocked","details":{"guard":"workspace_base_hash","status":"blocked","reason":"project_changed_after_workspace_creation","workspace_id":"ws-1","conflicts":[{"file":"editor/editor_window.py","expected_sha256":"aaaabbbbccccdddd","actual_sha256":"eeeeffff11112222"}]}}'
+    runner = StaticRunner(
+        CommandResult(
+            command=[],
+            cwd=tmp_path,
+            returncode=1,
+            stdout=stdout,
+            stderr="",
+            duration_sec=0.01,
+        )
+    )
+    client = CodeCollectorClient(make_settings(tmp_path), runner=runner)  # type: ignore[arg-type]
+
+    with pytest.raises(ApiError) as exc_info:
+        client.workspace_apply("ws-1")
+
+    exc = exc_info.value
+    assert exc.code == "WORKSPACE_APPLY_CONFLICT"
+    assert exc.status_code == 409
+    assert exc.details["guard"] == "workspace_base_hash"
+    assert exc.details["conflicts"][0]["file"] == "editor/editor_window.py"
+    assert exc.details["recommended_action"]
+
+
+def test_workspace_apply_non_conflict_failure_still_raises_command_error(tmp_path: Path) -> None:
+    runner = StaticRunner(
+        CommandResult(
+            command=[],
+            cwd=tmp_path,
+            returncode=1,
+            stdout='{"status":"failed","error_type":"OtherError","message":"boom"}',
+            stderr="boom",
+            duration_sec=0.01,
+        )
+    )
+    client = CodeCollectorClient(make_settings(tmp_path), runner=runner)  # type: ignore[arg-type]
+
+    with pytest.raises(ApiError) as exc_info:
+        client.workspace_apply("ws-1")
+
+    assert exc_info.value.code == "CODECOLLECTOR_COMMAND_FAILED"
+    assert exc_info.value.status_code == 502
