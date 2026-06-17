@@ -1137,6 +1137,8 @@ function renderSelectedCr() {
   $('cr-detail').querySelectorAll('[data-open-run]').forEach(el => el.addEventListener('click', () => openRunView(el.dataset.openRun)));
   const manualBtn = $('manual-target-btn');
   if (manualBtn) manualBtn.addEventListener('click', event => selectManualTarget(cr, event.currentTarget));
+  const schemaPickerBtn = $('schema-target-picker-btn');
+  if (schemaPickerBtn) schemaPickerBtn.addEventListener('click', event => openSchemaTargetPicker(cr, event.currentTarget));
 }
 
 function operationLabel(value) {
@@ -1499,6 +1501,7 @@ function renderManualTargetBlock(cr) {
       <div class="form-row"><label>${escapeHtml(role)}</label><input id="manual-target-input" value="${escapeHtml(getRecommendedOrSelectedTarget(cr) || '')}" placeholder="package.module.Class.method" ${disabled ? 'disabled' : ''}></div>
       <div class="action-row">
         <button class="btn small" id="manual-target-btn" ${disabled ? 'disabled' : ''}>Выбрать вручную</button>
+        <button class="btn small" id="schema-target-picker-btn" type="button" ${disabled ? 'disabled' : ''}>Выбрать из схемы</button>
         <span class="message">${escapeHtml(hint)}</span>
       </div>
     </div>
@@ -1510,6 +1513,27 @@ async function selectManualTarget(cr, button) {
   const qualname = String(input?.value || '').trim();
   if (!qualname) { alert('Укажите полное имя места изменения.'); return; }
   await selectTarget(cr.cr_id, qualname, button);
+}
+
+function openSchemaTargetPicker(cr, button) {
+  const input = $('manual-target-input');
+  if (!input) return;
+  if (!window.ProjectSymbolPicker) {
+    alert('Компонент выбора из схемы не загружен.');
+    return;
+  }
+  const currentValue = String(input.value || '').trim();
+  window.ProjectSymbolPicker.open({
+    schema: state.projectSchema,
+    selectedId: currentValue,
+    title: 'Выбор места изменения',
+    onSelect: node => {
+      input.value = node.id || '';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+      input.focus();
+    },
+  });
 }
 
 async function refreshCrAfterAction({ reloadRuns = false } = {}) {

@@ -63,24 +63,15 @@
         <span class="schema-path">knowledge: ${escapeHtml(model.knowledge_path || '—')}</span>
       </div>
       ${orphanLinks.length ? `<div class="message warn-message">Есть связи с отсутствующими узлами: ${orphanLinks.length}</div>` : ''}
-      <div class="project-schema-layout" data-schema-split>
+      <div class="project-schema-layout project-schema-layout-single">
         <section class="project-schema-tree-panel">
           <div class="schema-column-title">Структура проекта</div>
           <div class="project-schema-tree">
             ${roots.length ? roots.map(node => renderNode(node, children, 0)).join('') : '<div class="empty-state">В knowledge.yaml нет модулей или символов.</div>'}
           </div>
         </section>
-        <div class="project-schema-resizer" role="separator" aria-label="Изменить ширину структуры проекта" aria-orientation="vertical" title="Потяните, чтобы изменить ширину структуры проекта"></div>
-        <section class="project-schema-req-panel">
-          <div class="schema-column-title">Требования и связанные элементы</div>
-          <div class="project-schema-requirements">
-            ${requirements.length ? requirements.map(req => renderRequirement(req, linksByRequirement.get(req.id) || [], nodeById)).join('') : '<div class="empty-state">Файл требований пуст.</div>'}
-            ${renderMissingRequirements(linkedRequirementIds, requirementById, linksByRequirement, nodeById)}
-          </div>
-        </section>
       </div>
     `;
-    attachSchemaSplitter(container);
     attachRequirementBadgeLinks(container);
   }
 
@@ -581,6 +572,7 @@
         <div class="schema-node-line">
           ${kindBadge(node.kind)}
           <span class="schema-node-title" title="${escapeHtml(node.id)}">${escapeHtml(node.label || node.id)}</span>
+          ${node.id && node.id !== node.label ? `<span class="schema-node-full-id" title="${escapeHtml(node.id)}">${escapeHtml(node.id)}</span>` : ''}
           ${requirements.map(req => requirementBadge(req)).join('')}
         </div>
         ${node.title && node.title !== node.label ? `<div class="schema-node-subtitle">${escapeHtml(shortText(node.title, 120))}</div>` : ''}
